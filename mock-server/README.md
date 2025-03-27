@@ -101,3 +101,11 @@ curl -X GET "http://localhost:8000/robot-cleaner/patrol/setting"
 
 방범 구역 설정
 curl -X POST "http://localhost:8000/robot-cleaner/patrol/start" -H "Content-Type: application/json" -d '{"areas": ["안방", "거실"]}'
+
+## 루틴
+
+curl -X POST "http://localhost:8000/routine/register" -H "Content-Type: application/json" -d "{\"routine_name\": \"morning_mode\", \"routine_flow\": [\"1. 로봇청소기를 켠다\", \"2. 로봇청소기를 파워모드로 변경한다\", \"3. 에어컨을 끈다\"]}"
+
+curl -X GET "http://localhost:8000/routine/list"
+
+curl -X POST "http://localhost:8000/routine/delete" -H "Content-Type: application/json" -d "{\"routine_name\": \"night_mode\"}"
