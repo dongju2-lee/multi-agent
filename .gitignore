@@ -3,4 +3,4 @@ mock-server/mock/
 langgraph-app/lang/
 langgraph-app/logs/
 langgraph-app/sesstion_store/
-langgraph-app/.env/
+langgraph-app/.env
