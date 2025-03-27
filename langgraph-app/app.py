@@ -18,11 +18,36 @@ from langchain_core.messages import HumanMessage
 from session_manager import create_session_manager, SessionManager
 from logging_config import setup_logger
 
+# Langfuse 임포트
+from langfuse import Langfuse
+from langfuse.callback import CallbackHandler as LangfuseCallbackHandler
+
 # 로거 설정
 logger = setup_logger("app")
 
 # 환경 변수 로드
 load_dotenv()
+
+# Langfuse 사용 여부 확인
+LANGFUSE_ENABLE = os.getenv("LANGFUSE_ENABLE", "False").lower() in ('true', 'yes', '1', 't', 'y')
+
+# Langfuse 초기화
+langfuse = None
+if LANGFUSE_ENABLE:
+    try:
+        langfuse = Langfuse(
+            host=os.getenv("LANGFUSE_HOST", "http://0.0.0.0:3000"),
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
+            project=os.getenv("LANGFUSE_PROJECT", "smart-home-multi-agent")
+        )
+        logger.info("Langfuse 초기화 성공")
+    except Exception as e:
+        logger.error(f"Langfuse 초기화 실패: {str(e)}")
+        logger.error(traceback.format_exc())
+        langfuse = None
+else:
+    logger.info("Langfuse 비활성화 상태 - 모니터링이 수행되지 않습니다.")
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -145,9 +170,27 @@ async def ask_smart_home(request: QueryRequest = Body(...)):
     request_id = str(uuid4())
     logger.info(f"[{request_id}] 단일 질의 요청: {request.query[:100]}..." if len(request.query) > 100 else request.query)
     
+    # Langfuse 트레이스 시작
+    trace = None
+    if langfuse:
+        trace = langfuse.trace(
+            name="smart_home_ask",
+            id=request_id,
+            metadata={"query": request.query}
+        )
+    
     try:
         # 사용자 질의 처리
         user_query = request.query
+        
+        # Langfuse 콜백 핸들러 설정
+        callbacks = []
+        if langfuse and trace:
+            langfuse_callback = LangfuseCallbackHandler(
+                trace_id=trace.id
+            )
+            callbacks.append(langfuse_callback)
+            trace.update(input={"query": user_query})
         
         # 멀티에이전트 그래프 호출
         logger.info(f"[{request_id}] 멀티에이전트 그래프 호출 시작")
@@ -155,13 +198,15 @@ async def ask_smart_home(request: QueryRequest = Body(...)):
         result = smart_home_graph.invoke({
             "messages": [HumanMessage(content=user_query)],
             "next": None
-        })
+        }, config={"callbacks": callbacks} if callbacks else {})
         elapsed_time = time.time() - start_time
         logger.info(f"[{request_id}] 멀티에이전트 그래프 응답 (소요시간: {elapsed_time:.2f}초)")
         
         # 마지막 응답 추출
         if not result["messages"]:
             logger.error(f"[{request_id}] 에이전트 응답이 없습니다.")
+            if trace:
+                trace.update(status="error", error={"message": "에이전트 응답이 없습니다."})
             raise HTTPException(status_code=500, detail="에이전트 응답이 없습니다.")
         
         last_message = result["messages"][-1]
@@ -170,6 +215,13 @@ async def ask_smart_home(request: QueryRequest = Body(...)):
         
         logger.info(f"[{request_id}] 응답 에이전트: {agent_name}")
         logger.info(f"[{request_id}] 응답 내용: {response_text[:100]}..." if len(response_text) > 100 else response_text)
+        
+        # Langfuse 트레이스 완료
+        if trace:
+            trace.update(
+                output={"response": response_text, "agent": agent_name},
+                status="success"
+            )
         
         return QueryResponse(
             response=response_text,
@@ -180,6 +232,14 @@ async def ask_smart_home(request: QueryRequest = Body(...)):
         error_msg = f"오류가 발생했습니다: {str(e)}"
         logger.error(f"[{request_id}] {error_msg}")
         logger.error(f"[{request_id}] {traceback.format_exc()}")
+        
+        # Langfuse 트레이스 오류 기록
+        if trace:
+            trace.update(
+                status="error",
+                error={"message": str(e), "traceback": traceback.format_exc()}
+            )
+        
         raise HTTPException(status_code=500, detail=error_msg)
 
 # 대화형 세션 엔드포인트
@@ -188,6 +248,16 @@ async def chat_with_smart_home(request: ChatRequest = Body(...)):
     request_id = str(uuid4())
     session_id = request.session_id or "new"
     logger.info(f"[{request_id}] 대화형 세션 요청: 세션={session_id}, 쿼리={request.query[:100]}..." if len(request.query) > 100 else request.query)
+    
+    # Langfuse 트레이스 시작
+    trace = None
+    if langfuse:
+        trace = langfuse.trace(
+            name="smart_home_chat",
+            id=request_id,
+            user_id=session_id,
+            metadata={"query": request.query, "session_id": session_id}
+        )
     
     try:
         # 세션 ID 확인 또는 생성
@@ -206,46 +276,86 @@ async def chat_with_smart_home(request: ChatRequest = Body(...)):
             state = session_manager.get_session(session_id)
             if not state:
                 logger.error(f"[{request_id}] 세션을 생성할 수 없습니다.")
+                if trace:
+                    trace.update(status="error", error={"message": "세션을 생성할 수 없습니다."})
                 raise HTTPException(status_code=500, detail="세션을 생성할 수 없습니다.")
         
+        # 세션 메시지 목록 가져오기
+        messages = state.get("messages", [])
+        logger.info(f"[{request_id}] 세션 {session_id}의 메시지 수: {len(messages)}")
+        
         # 사용자 메시지 추가
-        state["messages"].append(HumanMessage(content=request.query))
-        logger.info(f"[{request_id}] 세션 {session_id}에 사용자 메시지 추가됨, 현재 메시지 수: {len(state['messages'])}")
+        messages.append(HumanMessage(content=request.query))
+        
+        # Langfuse 콜백 핸들러 설정
+        callbacks = []
+        if langfuse and trace:
+            langfuse_callback = LangfuseCallbackHandler(
+                trace_id=trace.id
+            )
+            callbacks.append(langfuse_callback)
+            trace.update(input={"query": request.query, "messages": [str(m) for m in messages]})
         
         # 멀티에이전트 그래프 호출
-        logger.info(f"[{request_id}] 멀티에이전트 그래프 호출 시작")
+        logger.info(f"[{request_id}] 멀티에이전트 그래프 호출 시작 (세션: {session_id})")
         start_time = time.time()
-        result = smart_home_graph.invoke(state)
+        result = smart_home_graph.invoke({
+            "messages": messages,
+            "next": None
+        }, config={"callbacks": callbacks} if callbacks else {})
         elapsed_time = time.time() - start_time
         logger.info(f"[{request_id}] 멀티에이전트 그래프 응답 (소요시간: {elapsed_time:.2f}초)")
         
-        # 세션 상태 업데이트
-        session_manager.update_session(session_id, result)
-        logger.info(f"[{request_id}] 세션 {session_id} 상태 업데이트됨")
+        # 결과에서 메시지 목록 가져오기
+        updated_messages = result.get("messages", [])
         
         # 마지막 응답 추출
-        if not result["messages"]:
+        if not updated_messages or len(updated_messages) <= len(messages):
             logger.error(f"[{request_id}] 에이전트 응답이 없습니다.")
+            if trace:
+                trace.update(status="error", error={"message": "에이전트 응답이 없습니다."})
             raise HTTPException(status_code=500, detail="에이전트 응답이 없습니다.")
         
-        last_message = result["messages"][-1]
+        last_message = updated_messages[-1]
         response_text = last_message.content
         agent_name = getattr(last_message, "name", "unknown")
         
         logger.info(f"[{request_id}] 응답 에이전트: {agent_name}")
         logger.info(f"[{request_id}] 응답 내용: {response_text[:100]}..." if len(response_text) > 100 else response_text)
         
+        # 세션 상태 업데이트
+        state["messages"] = updated_messages
+        session_manager.update_session(session_id, state)
+        
+        # Langfuse 트레이스 완료
+        if trace:
+            trace.update(
+                output={
+                    "response": response_text, 
+                    "agent": agent_name,
+                    "message_count": len(updated_messages)
+                },
+                status="success"
+            )
+        
         return ChatResponse(
             response=response_text,
             agent=agent_name,
             session_id=session_id,
-            message_count=len(result["messages"])
+            message_count=len(updated_messages)
         )
-        
     except Exception as e:
         error_msg = f"오류가 발생했습니다: {str(e)}"
         logger.error(f"[{request_id}] {error_msg}")
         logger.error(f"[{request_id}] {traceback.format_exc()}")
+        
+        # Langfuse 트레이스 오류 기록
+        if trace:
+            trace.update(
+                status="error",
+                error={"message": str(e), "traceback": traceback.format_exc()}
+            )
+        
         raise HTTPException(status_code=500, detail=error_msg)
 
 # 세션 초기화 엔드포인트
@@ -296,6 +406,23 @@ async def get_session_messages(session_id: str):
 async def health_check():
     logger.info("상태 확인 요청")
     return {"status": "healthy"}
+
+# 앱 종료 이벤트
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("애플리케이션 종료 중...")
+    
+    # Langfuse 종료
+    if LANGFUSE_ENABLE and langfuse:
+        try:
+            logger.info("Langfuse 연결 종료 중...")
+            langfuse.flush()
+            logger.info("Langfuse 연결 종료 완료")
+        except Exception as e:
+            logger.error(f"Langfuse 종료 중 오류 발생: {str(e)}")
+            logger.error(traceback.format_exc())
+    
+    logger.info("애플리케이션이 정상적으로 종료되었습니다.")
 
 # 메인 실행 함수
 if __name__ == "__main__":
