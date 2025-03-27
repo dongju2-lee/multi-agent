@@ -74,17 +74,60 @@ def get_supervisor_llm():
         from langchain_community.llms import FakeListLLM
         from langchain_core.prompts import ChatPromptTemplate
         
-        # 슈퍼바이저 결정을 시뮬레이션하는 간단한 장치
-        response_template = '{"next": "device_agent"}'
-        fake_llm = FakeListLLM(responses=[response_template])
-        
+        # 슈퍼바이저 결정을 시뮬레이션하는 장치
         class FakeSupervisorLLM:
             def with_structured_output(self, schema):
                 logger.info("FakeSupervisorLLM: 구조화된 출력 요청")
-                return fake_llm
+                return self
                 
             def invoke(self, messages, config=None):
-                logger.info("FakeSupervisorLLM: device_agent 반환")
+                # 마지막 메시지 확인
+                last_message = None
+                agent_name = None
+                
+                for msg in reversed(messages):
+                    if hasattr(msg, 'name') and msg.name in ['routine_agent', 'device_agent']:
+                        last_message = msg.content.lower()
+                        agent_name = msg.name
+                        break
+                
+                # 기본값은 새 요청이거나 에이전트가 아직 응답하지 않은 경우
+                if not last_message or not agent_name:
+                    # 새 사용자 메시지가 루틴 요청인지 확인
+                    user_message = messages[-1].content.lower() if messages else ""
+                    if "루틴" in user_message or "routine" in user_message:
+                        logger.info("FakeSupervisorLLM: 루틴 에이전트로 라우팅")
+                        return {"next": "routine_agent"}
+                    else:
+                        logger.info("FakeSupervisorLLM: 디바이스 에이전트로 라우팅")
+                        return {"next": "device_agent"}
+                
+                # 에이전트 응답 분석
+                if agent_name == "routine_agent":
+                    # 루틴 에이전트가 목록을 반환했거나 작업 완료를 표시한 경우
+                    if ("등록되었습니다" in last_message or 
+                        "삭제되었습니다" in last_message or "제안" in last_message):
+                        logger.info("FakeSupervisorLLM: 루틴 작업 완료, FINISH 반환")
+                        return {"next": "FINISH"}
+                    # '루틴 목록'이 있더라도, 실제 목록 내용이 포함되어 있는지 확인
+                    elif "루틴 목록" in last_message and "입니다" in last_message:
+                        logger.info("FakeSupervisorLLM: 루틴 목록 조회 완료, FINISH 반환")
+                        return {"next": "FINISH"}
+                    else:
+                        logger.info("FakeSupervisorLLM: 루틴 작업 계속, 루틴 에이전트로 반환")
+                        return {"next": "routine_agent"}
+                elif agent_name == "device_agent":
+                    # 디바이스 에이전트가 상태 변경 또는 조회를 완료한 경우
+                    if ("변경되었습니다" in last_message or "설정되었습니다" in last_message or 
+                        "현재 상태" in last_message or "온도" in last_message):
+                        logger.info("FakeSupervisorLLM: 디바이스 작업 완료, FINISH 반환")
+                        return {"next": "FINISH"}
+                    else:
+                        logger.info("FakeSupervisorLLM: 디바이스 작업 계속, 디바이스 에이전트로 반환")
+                        return {"next": "device_agent"}
+                
+                # 기본값은 디바이스 에이전트
+                logger.info("FakeSupervisorLLM: 기본값, 디바이스 에이전트로 라우팅")
                 return {"next": "device_agent"}
         
         return FakeSupervisorLLM()
