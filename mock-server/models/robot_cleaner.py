@@ -7,6 +7,13 @@ class RobotCleanerMode(str, Enum):
     PET = "pet"
     POWER = "power"
     AUTO = "auto"
+    PATROL = "patrol"
+
+class PatrolArea(str, Enum):
+    LIVING_ROOM = "거실"
+    MASTER_BEDROOM = "안방"
+    KITCHEN = "부엌"
+    SMALL_ROOM = "작은방"
 
 class RobotCleaner:
     def __init__(self):
@@ -14,6 +21,7 @@ class RobotCleaner:
         self.mode: RobotCleanerMode = RobotCleanerMode.NORMAL
         self.filter_used: int = random.randint(1, 100)
         self.cleaner_count: int = random.randint(1, 10)
+        self.patrol_areas: List[str] = []
     
     def set_state(self, state: str) -> bool:
         if state not in ["on", "off"]:
@@ -48,3 +56,29 @@ class RobotCleaner:
         # 여기서는 간단히 랜덤값을 반환합니다
         self.cleaner_count = random.randint(1, 10)
         return self.cleaner_count
+    
+    def get_patrol_areas(self) -> List[str]:
+        """설정된 방범 구역 목록을 반환합니다."""
+        return self.patrol_areas
+    
+    def get_available_patrol_areas(self) -> List[str]:
+        """설정 가능한 모든 방범 구역 목록을 반환합니다."""
+        return [area.value for area in PatrolArea]
+    
+    def set_patrol_areas(self, areas: List[str]) -> bool:
+        """방범 구역을 설정합니다. 유효한 구역만 설정할 수 있습니다."""
+        valid_areas = self.get_available_patrol_areas()
+        
+        # 모든 요청 구역이 유효한지 확인
+        for area in areas:
+            if area not in valid_areas:
+                return False
+        
+        # 유효한 구역만 설정
+        self.patrol_areas = areas
+        
+        # 방범 모드가 아니면 자동으로 방범 모드로 변경
+        if self.mode != RobotCleanerMode.PATROL:
+            self.mode = RobotCleanerMode.PATROL
+            
+        return True

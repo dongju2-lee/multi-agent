@@ -46,6 +46,21 @@ curl -X POST "http://localhost:8000/air-conditioner/mode" -H "Content-Type: appl
 에어컨 필터 사용률 확인
 curl -X GET "http://localhost:8000/air-conditioner/filter"
 
+현재 온도 조회
+curl -X GET "http://localhost:8000/air-conditioner/temperature"
+
+온도 범위 조회
+curl -X GET "http://localhost:8000/air-conditioner/temperature/range"
+
+온도 설정
+curl -X POST "http://localhost:8000/air-conditioner/temperature"  -H "Content-Type: application/json" -d '{"temperature": 25}'
+
+온도 올리기
+curl -X POST "http://localhost:8000/air-conditioner/temperature/increase"
+
+온도 내리기
+curl -X POST "http://localhost:8000/air-conditioner/temperature/decrease"
+
 ## 로봇청소기
 
 로봇청소기 상태 확인
@@ -77,3 +92,12 @@ curl -X GET "http://localhost:8000/robot-cleaner/filter"
 
 로봇청소기 오늘 청소 횟수 확인
 curl -X GET "http://localhost:8000/robot-cleaner/cleaner-count"
+
+방범 가능한 구역 목록 조회
+curl -X GET "http://localhost:8000/robot-cleaner/patrol/list"
+
+설정된 방범 구역 조회
+curl -X GET "http://localhost:8000/robot-cleaner/patrol/setting"
+
+방범 구역 설정
+curl -X POST "http://localhost:8000/robot-cleaner/patrol/start" -H "Content-Type: application/json" -d '{"areas": ["안방", "거실"]}'

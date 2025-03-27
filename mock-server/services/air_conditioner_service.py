@@ -46,3 +46,40 @@ class AirConditionerService:
         filter_used = self.air_conditioner.get_filter_used()
         logger.debug(f"Air conditioner filter usage: {filter_used}")
         return {"filter_used": filter_used}
+    
+    def get_temperature(self) -> Dict[str, int]:
+        """현재 설정된 온도를 반환합니다."""
+        logger.debug("Getting air conditioner temperature")
+        temperature = self.air_conditioner.get_temperature()
+        logger.debug(f"Current air conditioner temperature: {temperature}")
+        return {"temperature": temperature}
+    
+    def get_temperature_range(self) -> Dict[str, Dict]:
+        """설정 가능한 온도 범위를 반환합니다."""
+        logger.debug("Getting air conditioner temperature range")
+        temp_range = self.air_conditioner.get_temperature_range()
+        logger.debug(f"Air conditioner temperature range: {temp_range}")
+        return {"range": temp_range}
+    
+    def set_temperature(self, temperature: int) -> Dict[str, str]:
+        """온도를 설정합니다."""
+        logger.debug(f"Attempting to set air conditioner temperature to: {temperature}")
+        if self.air_conditioner.set_temperature(temperature):
+            logger.debug(f"Successfully set air conditioner temperature to: {temperature}")
+            return {"result": "success"}
+        logger.warning(f"Failed to set air conditioner temperature to: {temperature} - Invalid temperature")
+        return {"result": "fail", "msg": "유효하지 않은 온도입니다"}
+    
+    def increase_temperature(self) -> Dict[str, int]:
+        """온도를 1도 올립니다."""
+        logger.debug("Increasing air conditioner temperature")
+        new_temp = self.air_conditioner.increase_temperature()
+        logger.debug(f"Air conditioner temperature increased to: {new_temp}")
+        return {"temperature": new_temp}
+    
+    def decrease_temperature(self) -> Dict[str, int]:
+        """온도를 1도 내립니다."""
+        logger.debug("Decreasing air conditioner temperature")
+        new_temp = self.air_conditioner.decrease_temperature()
+        logger.debug(f"Air conditioner temperature decreased to: {new_temp}")
+        return {"temperature": new_temp}

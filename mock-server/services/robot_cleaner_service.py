@@ -52,3 +52,26 @@ class RobotCleanerService:
         cleaner_count = self.robot_cleaner.get_cleaner_count()
         logger.debug(f"Robot cleaner count: {cleaner_count}")
         return {"cleaner_count": cleaner_count}
+    
+    def get_patrol_areas(self) -> Dict[str, List[str]]:
+        """설정된 방범 구역 목록을 반환합니다."""
+        logger.debug("Getting robot cleaner patrol areas")
+        areas = self.robot_cleaner.get_patrol_areas()
+        logger.debug(f"Robot cleaner patrol areas: {areas}")
+        return {"areas": areas}
+    
+    def get_available_patrol_areas(self) -> Dict[str, List[str]]:
+        """설정 가능한 모든 방범 구역 목록을 반환합니다."""
+        logger.debug("Getting available robot cleaner patrol areas")
+        areas = self.robot_cleaner.get_available_patrol_areas()
+        logger.debug(f"Available robot cleaner patrol areas: {areas}")
+        return {"areas": areas}
+    
+    def set_patrol_areas(self, areas: List[str]) -> Dict[str, str]:
+        """방범 구역을 설정합니다."""
+        logger.debug(f"Attempting to set robot cleaner patrol areas: {areas}")
+        if self.robot_cleaner.set_patrol_areas(areas):
+            logger.debug(f"Successfully set robot cleaner patrol areas: {areas}")
+            return {"result": "success"}
+        logger.warning(f"Failed to set robot cleaner patrol areas: {areas} - Invalid areas")
+        return {"result": "fail", "msg": "유효하지 않은 방범 구역입니다"}
