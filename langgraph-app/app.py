@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional, DefaultDict
 from dotenv import load_dotenv
@@ -145,24 +145,190 @@ async def root():
 @app.get("/graph")
 async def get_graph_image():
     logger.info("그래프 이미지 요청")
-    # 가장 최근에 생성된 그래프 이미지 찾기
-    image_files = glob.glob(os.path.join(GRAPH_IMG_DIR, "*.png"))
-    if not image_files:
-        logger.error("그래프 이미지를 찾을 수 없습니다.")
-        raise HTTPException(status_code=404, detail="그래프 이미지를 찾을 수 없습니다.")
-    
-    # 가장 최근에 수정된 파일 찾기
-    latest_image = max(image_files, key=os.path.getmtime)
-    filename = os.path.basename(latest_image)
-    logger.info(f"그래프 이미지 반환: {filename}")
-    
-    # 이미지 파일 반환
-    return FileResponse(
-        latest_image, 
-        media_type="image/png", 
-        filename=filename,
-        headers={"Content-Disposition": f"inline; filename={filename}"}
-    )
+    try:
+        # 가장 최근에 생성된 PNG 이미지 찾기
+        image_files = glob.glob(os.path.join(GRAPH_IMG_DIR, "*.png"))
+        if image_files:
+            # 가장 최근에 수정된 파일 찾기
+            latest_image = max(image_files, key=os.path.getmtime)
+            filename = os.path.basename(latest_image)
+            logger.info(f"그래프 PNG 이미지 반환: {filename}")
+            
+            # 이미지 파일 반환
+            return FileResponse(
+                latest_image, 
+                media_type="image/png", 
+                filename=filename,
+                headers={"Content-Disposition": f"inline; filename={filename}"}
+            )
+        
+        # PNG 이미지가 없으면 MMD 텍스트 파일 찾기
+        logger.info("PNG 이미지가 없어 MMD 텍스트 파일 검색")
+        mmd_files = glob.glob(os.path.join(GRAPH_IMG_DIR, "*.mmd"))
+        if mmd_files:
+            # 가장 최근에 수정된 MMD 파일 찾기
+            latest_mmd = max(mmd_files, key=os.path.getmtime)
+            filename = os.path.basename(latest_mmd)
+            logger.info(f"그래프 MMD 텍스트 반환: {filename}")
+            
+            # MMD 파일 내용 읽기
+            with open(latest_mmd, "r", encoding="utf-8") as f:
+                mmd_content = f.read()
+            
+            # HTML로 래핑하여 반환
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>스마트홈 멀티에이전트 그래프</title>
+                <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+                <script>
+                    mermaid.initialize({{ startOnLoad: true }});
+                </script>
+                <style>
+                    body {{ font-family: sans-serif; margin: 20px; }}
+                    h1 {{ color: #333; }}
+                    .mermaid {{ 
+                        background-color: white; 
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                    }}
+                    pre {{
+                        background-color: #f5f5f5;
+                        padding: 15px;
+                        border-radius: 8px;
+                        overflow-x: auto;
+                    }}
+                </style>
+            </head>
+            <body>
+                <h1>스마트홈 멀티에이전트 그래프</h1>
+                <div class="mermaid">
+                {mmd_content}
+                </div>
+                <h2>Mermaid 텍스트:</h2>
+                <pre>{mmd_content}</pre>
+            </body>
+            </html>
+            """
+            
+            return HTMLResponse(content=html_content)
+        
+        # PNG와 MMD 파일이 모두 없으면 그래프 새로 생성
+        logger.info("그래프 파일이 없어 새로 생성합니다")
+        graph_result = save_graph_as_image(smart_home_graph)
+        
+        if graph_result and isinstance(graph_result, str):
+            if graph_result.endswith(".png"):
+                # PNG 생성 성공
+                logger.info(f"새 그래프 PNG 이미지 생성됨: {graph_result}")
+                return FileResponse(
+                    graph_result, 
+                    media_type="image/png", 
+                    filename=os.path.basename(graph_result),
+                    headers={"Content-Disposition": f"inline; filename={os.path.basename(graph_result)}"}
+                )
+            elif graph_result.endswith(".mmd"):
+                # MMD 생성 성공
+                logger.info(f"새 그래프 MMD 텍스트 생성됨: {graph_result}")
+                with open(graph_result, "r", encoding="utf-8") as f:
+                    mmd_content = f.read()
+                
+                # HTML로 래핑하여 반환
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>스마트홈 멀티에이전트 그래프</title>
+                    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+                    <script>
+                        mermaid.initialize({{ startOnLoad: true }});
+                    </script>
+                    <style>
+                        body {{ font-family: sans-serif; margin: 20px; }}
+                        h1 {{ color: #333; }}
+                        .mermaid {{ 
+                            background-color: white; 
+                            padding: 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                        }}
+                        pre {{
+                            background-color: #f5f5f5;
+                            padding: 15px;
+                            border-radius: 8px;
+                            overflow-x: auto;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <h1>스마트홈 멀티에이전트 그래프</h1>
+                    <div class="mermaid">
+                    {mmd_content}
+                    </div>
+                    <h2>Mermaid 텍스트:</h2>
+                    <pre>{mmd_content}</pre>
+                </body>
+                </html>
+                """
+                
+                return HTMLResponse(content=html_content)
+            else:
+                # 문자열 형태의 그래프 구조
+                logger.info("그래프 구조 텍스트로 반환")
+                return HTMLResponse(content=f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>스마트홈 멀티에이전트 그래프 구조</title>
+                    <style>
+                        body {{ font-family: sans-serif; margin: 20px; }}
+                        h1 {{ color: #333; }}
+                        pre {{
+                            background-color: #f5f5f5;
+                            padding: 15px;
+                            border-radius: 8px;
+                            overflow-x: auto;
+                            white-space: pre-wrap;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <h1>스마트홈 멀티에이전트 그래프 구조</h1>
+                    <p>이미지 변환에 실패하여 텍스트 형식으로 표시합니다.</p>
+                    <pre>{graph_result}</pre>
+                </body>
+                </html>
+                """)
+    except Exception as e:
+        logger.error(f"그래프 이미지 생성 중 오류: {str(e)}")
+        logger.error(traceback.format_exc())
+        return HTMLResponse(content=f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>그래프 생성 오류</title>
+            <style>
+                body {{ font-family: sans-serif; margin: 20px; }}
+                h1 {{ color: #c00; }}
+                .error {{ 
+                    background-color: #fff0f0; 
+                    padding: 15px; 
+                    border-radius: 8px;
+                    border: 1px solid #ffcccc;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>그래프 생성 오류</h1>
+            <div class="error">
+                <p>그래프를 생성하는 중에 오류가 발생했습니다:</p>
+                <pre>{str(e)}</pre>
+            </div>
+        </body>
+        </html>
+        """, status_code=500)
 
 # 스마트홈 질의 엔드포인트 (단일 질의-응답)
 @app.post("/ask", response_model=QueryResponse)

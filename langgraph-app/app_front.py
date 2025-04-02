@@ -189,11 +189,10 @@ with st.sidebar:
 
         # 예시 JSON
         example_json = {
-            "mcp-server-name": {
-            # 서버의 포트와 일치해야 합니다.(8005번 포트)
-            "url": "http://ip:port/sse",
-            "transport": "sse",
-        }
+            "robot-cleaner": {
+                "url": "http://0.0.0.0:8001/robot-cleaner/state",
+                "transport": "sse",
+            }
         }
 
         default_text = json.dumps(example_json, indent=2, ensure_ascii=False)

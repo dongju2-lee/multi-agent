@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import networkx as nx
 import glob
+import asyncio
 
 # 로깅 설정 가져오기
 import sys
@@ -29,7 +30,7 @@ from logging_config import setup_logger
 # 로거 설정
 logger = setup_logger("supervisor")
 
-from agents.agents import create_routine_agent, create_device_agent
+from agents.agents import create_routine_agent, create_device_agent, create_robot_cleaner_agent
 
 # 멀티에이전트 메시지 상태 정의
 class SmartHomeState(TypedDict):
@@ -40,7 +41,10 @@ class SmartHomeState(TypedDict):
 # 라우팅 결정 클래스 정의 - Vertex AI 함수 호출 형식에 맞게 수정
 class Router(TypedDict):
     """다음에 실행할 에이전트 결정"""
-    next: str  # "routine_agent", "device_agent", "FINISH" 중 하나
+    next: str  # "routine_agent", "device_agent", "robot_cleaner_agent", "FINISH" 중 하나
+
+# 각 에이전트 메모리
+AGENT_MEMORY = {}
 
 # 슈퍼바이저 모델 초기화
 def get_supervisor_llm():
@@ -53,7 +57,7 @@ def get_supervisor_llm():
             "properties": {
                 "next": {
                     "type": "string",
-                    "enum": ["routine_agent", "device_agent", "FINISH"],
+                    "enum": ["routine_agent", "device_agent", "robot_cleaner_agent", "FINISH"],
                     "description": "다음에 실행할 에이전트 또는 종료 명령"
                 }
             },
@@ -61,9 +65,15 @@ def get_supervisor_llm():
         }
         
         logger.info("Vertex AI 모델 로드 시도")
-        llm = ChatVertexAI(model="gemini-2.0-flash")
+        model_name = os.getenv("MODEL_NAME", "gemini-1.5-pro")
+        llm = ChatVertexAI(
+            model_name=model_name,
+            temperature=0,
+            convert_system_message_to_human=True,
+        )
         # 구조화된 출력 형식으로 직접 설정
         llm._function_call_schema = router_schema
+        
         logger.info("슈퍼바이저 LLM 초기화 성공")
         return llm
     except Exception as e:
@@ -86,18 +96,21 @@ def get_supervisor_llm():
                 agent_name = None
                 
                 for msg in reversed(messages):
-                    if hasattr(msg, 'name') and msg.name in ['routine_agent', 'device_agent']:
+                    if hasattr(msg, 'name') and msg.name in ['routine_agent', 'device_agent', 'robot_cleaner_agent']:
                         last_message = msg.content.lower()
                         agent_name = msg.name
                         break
                 
                 # 기본값은 새 요청이거나 에이전트가 아직 응답하지 않은 경우
                 if not last_message or not agent_name:
-                    # 새 사용자 메시지가 루틴 요청인지 확인
+                    # 새 사용자 메시지가 루틴 요청인지, 로봇청소기 요청인지 확인
                     user_message = messages[-1].content.lower() if messages else ""
                     if "루틴" in user_message or "routine" in user_message:
                         logger.info("FakeSupervisorLLM: 루틴 에이전트로 라우팅")
                         return {"next": "routine_agent"}
+                    elif "로봇" in user_message or "청소기" in user_message or "robot" in user_message or "cleaner" in user_message:
+                        logger.info("FakeSupervisorLLM: 로봇청소기 에이전트로 라우팅")
+                        return {"next": "robot_cleaner_agent"}
                     else:
                         logger.info("FakeSupervisorLLM: 디바이스 에이전트로 라우팅")
                         return {"next": "device_agent"}
@@ -125,6 +138,15 @@ def get_supervisor_llm():
                     else:
                         logger.info("FakeSupervisorLLM: 디바이스 작업 계속, 디바이스 에이전트로 반환")
                         return {"next": "device_agent"}
+                elif agent_name == "robot_cleaner_agent":
+                    # 로봇청소기 에이전트가 상태 변경 또는 조회를 완료한 경우
+                    if ("변경되었습니다" in last_message or "설정되었습니다" in last_message or 
+                        "현재 상태" in last_message or "모드" in last_message):
+                        logger.info("FakeSupervisorLLM: 로봇청소기 작업 완료, FINISH 반환")
+                        return {"next": "FINISH"}
+                    else:
+                        logger.info("FakeSupervisorLLM: 로봇청소기 작업 계속, 로봇청소기 에이전트로 반환")
+                        return {"next": "robot_cleaner_agent"}
                 
                 # 기본값은 디바이스 에이전트
                 logger.info("FakeSupervisorLLM: 기본값, 디바이스 에이전트로 라우팅")
@@ -135,18 +157,21 @@ def get_supervisor_llm():
 # 슈퍼바이저 시스템 프롬프트 정의
 SUPERVISOR_SYSTEM_PROMPT = """당신은 스마트홈 시스템의 슈퍼바이저 에이전트입니다. 사용자의 요청을 분석하여 적절한 에이전트에 작업을 할당합니다.
 
-당신은 다음 두 가지 에이전트 중 하나를 선택해야 합니다:
+당신은 다음 세 가지 에이전트 중 하나를 선택해야 합니다:
 1. routine_agent: 스마트홈 루틴 관리를 담당합니다. 루틴 등록, 조회, 삭제, 제안 등의 작업을 수행합니다.
-2. device_agent: 가전제품(냉장고, 에어컨, 로봇청소기) 제어를 담당합니다. 전원 제어, 모드 변경, 상태 확인 등의 작업을 수행합니다.
+2. device_agent: 가전제품(냉장고, 에어컨) 제어를 담당합니다. 전원 제어, 모드 변경, 상태 확인 등의 작업을 수행합니다.
+3. robot_cleaner_agent: 로봇청소기 제어를 담당합니다. 로봇청소기의, 전원 제어, 모드 변경, 방범 구역 설정 등의 작업을 수행합니다.
 
 사용자의 요청을 분석하여 다음 중 하나를 선택하세요:
 - "routine_agent": 루틴 관련 요청인 경우 (루틴 등록, 조회, 삭제, 제안)
-- "device_agent": 가전제품 제어 관련 요청인 경우 (가전제품 전원, 모드, 상태 변경 등)
+- "device_agent": 냉장고와 에어컨 제어 관련 요청인 경우 (냉장고, 에어컨의 전원, 모드, 상태 변경 등)
+- "robot_cleaner_agent": 로봇청소기 제어 관련 요청인 경우 (로봇청소기의 전원, 모드, 방범 구역 설정 등)
 - "FINISH": 모든 작업이 완료되어 더 이상 에이전트 호출이 필요 없는 경우
 
 에이전트 선택 기준:
 - 사용자가 루틴에 대해 언급하거나 루틴 관련 작업을 요청하는 경우 -> routine_agent
-- 사용자가 특정 가전제품(냉장고, 에어컨, 로봇청소기)의 제어나 상태 확인을 요청하는 경우 -> device_agent
+- 사용자가 로봇청소기에 대해 언급하거나 로봇청소기 관련 작업을 요청하는 경우 -> robot_cleaner_agent
+- 사용자가 냉장고나 에어컨 제어를 요청하는 경우 -> device_agent
 - 이전 에이전트의 응답만으로 사용자의 요청이 완료된 경우 -> FINISH
 
 항상 정확하고 명확한 결정을 내려주세요.
@@ -258,6 +283,7 @@ def routine_agent_node(state: SmartHomeState, config: RunnableConfig):
             "next": "supervisor"
         }
 
+
 # 가전제품 제어 에이전트 노드 정의
 def device_agent_node(state: SmartHomeState, config: RunnableConfig):
     """가전제품 제어 에이전트 노드 구현"""
@@ -314,6 +340,71 @@ def device_agent_node(state: SmartHomeState, config: RunnableConfig):
             "next": "supervisor"
         }
 
+# 로봇청소기 제어 에이전트 노드 정의
+async def robot_cleaner_agent_node_async(state: SmartHomeState):
+    """로봇청소기 에이전트 노드의 비동기 구현: 로봇청소기 제어 처리"""
+    logger.info("로봇청소기 에이전트 노드 비동기 실행")
+    
+    # 로봇청소기 에이전트가 이미 생성되어 있는지 확인
+    if "robot_cleaner_agent" not in AGENT_MEMORY:
+        logger.info("로봇청소기 에이전트 생성 시작 (비동기)")
+        try:
+            # 로봇청소기 에이전트 비동기 생성
+            AGENT_MEMORY["robot_cleaner_agent"] = await create_robot_cleaner_agent()
+            logger.info("로봇청소기 에이전트 생성 완료 (비동기)")
+        except Exception as e:
+            logger.error(f"로봇청소기 에이전트 생성 실패: {str(e)}")
+            logger.error(traceback.format_exc())
+            error_message = AIMessage(
+                content=f"죄송합니다. 로봇청소기 에이전트를 초기화하는 중에 오류가 발생했습니다: {str(e)}",
+                name="robot_cleaner_agent"
+            )
+            return {"messages": state["messages"] + [error_message], "next": None}
+    
+    # 로봇청소기 에이전트 실행
+    try:
+        # create_react_agent로 생성된 에이전트 실행
+        result = await AGENT_MEMORY["robot_cleaner_agent"].ainvoke({
+            "messages": state["messages"]  # 메시지 이력만 전달
+        })
+        response_content = result.get("output", "")
+        
+        logger.info(f"로봇청소기 에이전트 응답: {response_content[:200]}..." if len(response_content) > 200 else response_content)
+        
+        # 에이전트 응답 메시지 생성
+        agent_message = AIMessage(content=response_content, name="robot_cleaner_agent")
+        
+        # 상태 업데이트
+        return {"messages": state["messages"] + [agent_message], "next": None}
+    except Exception as e:
+        logger.error(f"로봇청소기 에이전트 실행 중 오류 발생: {str(e)}")
+        logger.error(traceback.format_exc())
+        
+        # 오류 응답 메시지 생성
+        error_message = AIMessage(
+            content=f"죄송합니다. 로봇청소기 에이전트 실행 중에 오류가 발생했습니다: {str(e)}",
+            name="robot_cleaner_agent"
+        )
+        
+        # 상태 업데이트
+        return {"messages": state["messages"] + [error_message], "next": None}
+
+# 동기식 래퍼 함수
+def robot_cleaner_agent_node(state: SmartHomeState, config: RunnableConfig):
+    """로봇청소기 에이전트 노드: 로봇청소기 제어 처리 (동기식 래퍼)"""
+    logger.info("로봇청소기 에이전트 노드 실행 (동기 래퍼)")
+    
+    # 이벤트 루프 가져오기
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # 이벤트 루프가 없는 경우 새로 생성
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    # 비동기 함수 실행
+    return loop.run_until_complete(robot_cleaner_agent_node_async(state))
+
 # 그래프 이미지 저장 함수
 def save_graph_as_image(graph, filename=None):
     """
@@ -324,7 +415,7 @@ def save_graph_as_image(graph, filename=None):
         filename: 저장할 파일명 (없으면 현재 시간 기반으로 자동 생성)
     
     Returns:
-        저장된 파일 경로
+        저장된 파일 경로 또는 텍스트 형식의 그래프
     """
     logger.info("그래프 이미지 저장 시작")
     # 그래프 이미지 디렉토리 생성
@@ -342,46 +433,73 @@ def save_graph_as_image(graph, filename=None):
     
     # 그래프를 이미지로 변환하여 저장
     try:
-        # mermaid PNG 생성
+        # mermaid PNG 생성 시도
         logger.info("mermaid PNG 생성 시도")
-        png_data = graph.get_graph().draw_mermaid_png()
-        
-        # PNG 데이터를 파일로 저장
-        with open(filepath, "wb") as f:
-            f.write(png_data)
-        
-        logger.info(f"그래프 이미지가 저장되었습니다: {filepath}")
-        return filepath
+        try:
+            png_data = graph.get_graph().draw_mermaid_png()
+            
+            # PNG 데이터를 파일로 저장
+            with open(filepath, "wb") as f:
+                f.write(png_data)
+            
+            logger.info(f"그래프 이미지가 저장되었습니다: {filepath}")
+            return filepath
+        except Exception as e:
+            logger.warning(f"PNG 생성 실패, 대체 텍스트 형식으로 시도합니다: {str(e)}")
+            
+            # 대체: 텍스트 형식 (mermaid)으로 저장
+            text_filename = filename.replace(".png", ".mmd")
+            text_filepath = os.path.join(graph_dir, text_filename)
+            
+            # 그래프를 mermaid 텍스트로 저장
+            mermaid_text = graph.get_graph().draw_mermaid()
+            with open(text_filepath, "w", encoding="utf-8") as f:
+                f.write(mermaid_text)
+                
+            logger.info(f"그래프 텍스트가 저장되었습니다: {text_filepath}")
+            return text_filepath
+            
     except Exception as e:
-        error_msg = f"그래프 이미지 저장 중 오류 발생: {str(e)}"
+        error_msg = f"그래프 저장 중 오류 발생: {str(e)}"
         logger.error(error_msg)
         logger.error(traceback.format_exc())
-        return None
+        
+        # 실패 시 그래프 구조를 텍스트로 반환
+        try:
+            logger.info("그래프 구조 텍스트 반환 시도")
+            return str(graph.get_graph())
+        except:
+            return f"그래프 변환 실패: {error_msg}"
 
-# 스마트홈 멀티에이전트 그래프 생성 함수
+# 스마트홈 그래프 생성
 def create_smart_home_graph():
-    """스마트홈 멀티에이전트 시스템 그래프 생성"""
-    logger.info("멀티에이전트 그래프 생성 시작")
+    """스마트홈 멀티에이전트 시스템의 그래프를 생성합니다."""
+    logger.info("스마트홈 그래프 생성 시작")
     
     try:
+        # LangGraph 임포트
+        from langgraph.graph import StateGraph, END
+        
         # 그래프 빌더 생성
         logger.info("StateGraph 객체 생성")
         workflow = StateGraph(SmartHomeState)
         
         # 노드 추가
-        logger.info("그래프에 노드 추가: supervisor, routine_agent, device_agent")
+        logger.info("그래프에 노드 추가: supervisor, routine_agent, device_agent, robot_cleaner_agent")
         workflow.add_node("supervisor", supervisor_node)
         workflow.add_node("routine_agent", routine_agent_node)
         workflow.add_node("device_agent", device_agent_node)
+        workflow.add_node("robot_cleaner_agent", robot_cleaner_agent_node)
         
         # 시작 노드 설정
         logger.info("시작 노드 설정: supervisor")
         workflow.set_entry_point("supervisor")
         
-        # 루틴/디바이스 에이전트 → 슈퍼바이저 엣지 추가
+        # 에이전트 → 슈퍼바이저 엣지 추가
         logger.info("에이전트 → 슈퍼바이저 엣지 추가")
         workflow.add_edge("routine_agent", "supervisor")
         workflow.add_edge("device_agent", "supervisor")
+        workflow.add_edge("robot_cleaner_agent", "supervisor")
         
         # 슈퍼바이저 → 에이전트 또는 종료 조건부 엣지 추가
         logger.info("슈퍼바이저 → 에이전트 또는 종료 조건부 엣지 추가")
@@ -391,6 +509,7 @@ def create_smart_home_graph():
             {
                 "routine_agent": "routine_agent",
                 "device_agent": "device_agent",
+                "robot_cleaner_agent": "robot_cleaner_agent",
                 END: END
             }
         )

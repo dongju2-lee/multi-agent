@@ -18,6 +18,11 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.language_models import LLM
 from langchain_core.callbacks import BaseCallbackHandler
 from logging_config import setup_logger
+from tools.routine_tools import register_routine, list_routines, delete_routine, suggest_routine
+from tools.device_tools import (
+    get_refrigerator_tools, 
+    get_air_conditioner_tools
+)
 
 # 로거 설정
 logger = setup_logger("agents")
@@ -48,13 +53,6 @@ except ImportError:
     logger.warning("vertexai 또는 google.cloud.aiplatform 모듈을 찾을 수 없습니다. Vertex AI를 사용할 수 없습니다.")
 except Exception as e:
     logger.error(f"Vertex AI 초기화 중 오류 발생: {str(e)}")
-
-from tools.routine_tools import register_routine, list_routines, delete_routine, suggest_routine
-from tools.device_tools import (
-    get_refrigerator_tools, 
-    get_air_conditioner_tools, 
-    get_robot_cleaner_tools
-)
 
 # 로깅 콜백 핸들러 정의
 class LoggingCallbackHandler(BaseCallbackHandler):
@@ -116,7 +114,6 @@ class FakeDeviceAgentLLM(LLM):
 - 에어컨 (거실, 침실)
 - 조명 (거실, 침실, 주방)
 - TV (거실)
-- 로봇청소기
 - 냉장고
 
 무엇을 도와드릴까요?
@@ -168,12 +165,13 @@ def create_routine_agent():
     # 루틴 관리용 도구 목록
     routine_tools = [register_routine, list_routines, delete_routine, suggest_routine]
     
-    # Vertex AI 모델 초기화
+    # Gemini 모델만 사용 (Vertex AI)
     try:
         logger.info("루틴 에이전트 LLM 초기화 시도 (Vertex AI)")
         start_time = time.time()
         
-        llm = ChatVertexAI(model="gemini-2.0-flash")
+        model_name = os.getenv("MODEL_NAME", "")
+        llm = ChatVertexAI(model_name=model_name, temperature=0)
         
         end_time = time.time()
         logger.info(f"루틴 에이전트 LLM 초기화 성공 (소요 시간: {end_time - start_time:.2f}초)")
@@ -182,8 +180,8 @@ def create_routine_agent():
         logger.error(traceback.format_exc())
         
         # 실패 시 테스트용 LLM 사용
-        from langchain_community.llms import FakeListLLM
-        llm = FakeListLLM(responses=["루틴 관리 요청이 처리되었습니다."])
+        llm = FakeRoutineAgentLLM()
+        logger.warning("Vertex AI 초기화 실패, 가짜 루틴 에이전트 LLM으로 대체")
     
     # 에이전트 생성 - LangGraph의 create_react_agent 사용
     langgraph_agent = create_react_agent(
@@ -197,21 +195,22 @@ def create_routine_agent():
 
 # 가전제품 제어 에이전트 생성 함수
 def create_device_agent():
-    """가전제품 제어 에이전트를 생성합니다."""
+    """가전제품 제어 에이전트를 생성합니다. (냉장고, 에어컨만 담당)"""
     logger.info("기기 에이전트 생성 시작")
     
     # 가전제품 제어 에이전트용 프롬프트 템플릿
     device_agent_prompt = ChatPromptTemplate.from_messages([
-        ("system", """스마트홈 가전제품 제어 에이전트입니다. 당신은 다양한 스마트홈 가전제품(냉장고, 에어컨, 로봇청소기)을 제어합니다.
+        ("system", """스마트홈 가전제품 제어 에이전트입니다. 당신은 다양한 스마트홈 가전제품(냉장고, 에어컨)을 제어합니다.
 
 당신은 다음과 같은 가전제품을 제어할 수 있습니다:
 1. 냉장고: 전원 제어, 모드 변경, 식품 목록 확인 등
 2. 에어컨: 전원 제어, 모드 변경, 온도 조절, 필터 사용량 확인 등
-3. 로봇청소기: 전원 제어, 모드 변경, 방범 구역 설정, 필터 사용량 확인, 청소 횟수 확인 등
 
 사용자의 요청에 따라 적절한 가전제품과 기능을 선택하여 제어하세요.
 항상 현재 상태를 확인한 후 변경하는 것이 좋습니다.
 작업 완료 후에는 수행한 작업의 결과를 사용자에게 명확히 알려주세요.
+
+참고: 로봇청소기는 별도의 에이전트가 담당하므로 당신은 제어할 수 없습니다.
 
 모든 응답은 명확하고 친절하게 제공하세요.
 """),
@@ -221,17 +220,17 @@ def create_device_agent():
     # 각 가전제품 제어용 도구 목록
     refrigerator_tools = get_refrigerator_tools()
     air_conditioner_tools = get_air_conditioner_tools()
-    robot_cleaner_tools = get_robot_cleaner_tools()
     
-    # 모든 가전제품 도구를 하나로 합침
-    device_tools = refrigerator_tools + air_conditioner_tools + robot_cleaner_tools
+    # 냉장고와 에어컨 도구만 합침
+    device_tools = refrigerator_tools + air_conditioner_tools
     
-    # Vertex AI 모델 초기화
+    # Gemini 모델만 사용 (Vertex AI)
     try:
         logger.info("기기 에이전트 LLM 초기화 시도 (Vertex AI)")
         start_time = time.time()
         
-        llm = ChatVertexAI(model="gemini-2.0-flash")
+        model_name = os.getenv("MODEL_NAME", "")
+        llm = ChatVertexAI(model_name=model_name, temperature=0)
         
         end_time = time.time()
         logger.info(f"기기 에이전트 LLM 초기화 성공 (소요 시간: {end_time - start_time:.2f}초)")
@@ -240,8 +239,8 @@ def create_device_agent():
         logger.error(traceback.format_exc())
         
         # 실패 시 테스트용 LLM 사용
-        from langchain_community.llms import FakeListLLM
-        llm = FakeListLLM(responses=["가전제품 제어 요청이 처리되었습니다."])
+        llm = FakeDeviceAgentLLM()
+        logger.warning("Vertex AI 초기화 실패, 가짜 기기 에이전트 LLM으로 대체")
     
     # 에이전트 생성 - LangGraph의 create_react_agent 사용
     langgraph_agent = create_react_agent(
@@ -251,4 +250,69 @@ def create_device_agent():
     )
     
     logger.info("기기 에이전트 생성 완료")
-    return langgraph_agent.with_config({"run_name": "DeviceAgent"}) 
+    return langgraph_agent.with_config({"run_name": "DeviceAgent"})
+
+# 로봇청소기 MCP 에이전트 생성 함수
+async def create_robot_cleaner_agent():
+    """로봇청소기 제어 에이전트를 생성합니다."""
+    logger.info("로봇청소기 에이전트 생성 시작")
+
+    try:
+        # MCP 클라이언트에서 로봇청소기 도구 가져오기
+        logger.info("MCP 클라이언트에서 로봇청소기 도구 가져오기")
+        from mcp_client import get_mcp_tools
+        
+        # MCP 도구 가져오기 - 실패하면 예외를 그대로 전파
+        tools = get_mcp_tools()
+        logger.info(f"MCP 도구 {len(tools)}개 로드됨")
+        
+        # 로봇청소기 LLM 이름 로깅
+        model_name = os.getenv("MODEL_NAME", "")
+        logger.info(f"로봇청소기 에이전트 LLM: {model_name}")
+        
+        # Gemini 모델 초기화
+        try:
+            from langchain_google_vertexai import ChatVertexAI
+            
+            PROJECT_ID = os.getenv("VERTEX_PROJECT_ID")
+            REGION = os.getenv("VERTEX_REGION", "us-central1")
+            
+            if not PROJECT_ID:
+                raise ValueError("Vertex AI 프로젝트 ID가 설정되지 않았습니다")
+            
+            logger.info(f"Vertex AI ChatVertexAI 초기화 (모델: {model_name})")
+            llm = ChatVertexAI(
+                model_name=model_name,
+                convert_system_message_to_human=True,
+                temperature=0,
+                max_output_tokens=1024
+            )
+        except Exception as e:
+            logger.error(f"Vertex AI 초기화 실패: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise ValueError(f"로봇청소기 에이전트 LLM 초기화 실패: {str(e)}")
+        
+        # 로봇청소기 프롬프트 생성 - 단순화된 프롬프트 구조 사용
+        robot_cleaner_prompt = ChatPromptTemplate.from_messages([
+            ("system", """당신은 로봇청소기를 제어하는 스마트홈 에이전트입니다. 
+로봇청소기의 상태 확인, 전원 제어, 모드 변경, 방범 기능 설정 등을 수행할 수 있습니다.
+
+응답은 항상 한국어로 제공하세요."""),
+            MessagesPlaceholder(variable_name="messages")
+        ])
+        
+        # create_react_agent를 사용하여 로봇청소기 에이전트 생성
+        logger.info("로봇청소기 에이전트 생성 - create_react_agent 사용")
+        robot_cleaner_agent = create_react_agent(
+            model=llm,
+            tools=tools,
+            prompt=robot_cleaner_prompt
+        )
+        
+        logger.info("로봇청소기 에이전트 생성 완료")
+        return robot_cleaner_agent.with_config({"run_name": "RobotCleanerAgent"})
+    
+    except Exception as e:
+        logger.error(f"로봇청소기 에이전트 생성 중 오류 발생: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise 
