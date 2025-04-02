@@ -343,67 +343,68 @@ def device_agent_node(state: SmartHomeState, config: RunnableConfig):
 # 로봇청소기 제어 에이전트 노드 정의
 async def robot_cleaner_agent_node_async(state: SmartHomeState):
     """로봇청소기 에이전트 노드의 비동기 구현: 로봇청소기 제어 처리"""
-    logger.info("로봇청소기 에이전트 노드 비동기 실행")
+    request_id = f"req-{time.time()}"
+    logger.info(f"[{request_id}] 로봇청소기 에이전트 노드 비동기 실행")
     
     # 로봇청소기 에이전트가 이미 생성되어 있는지 확인
     if "robot_cleaner_agent" not in AGENT_MEMORY:
-        logger.info("로봇청소기 에이전트 생성 시작 (비동기)")
+        logger.info(f"[{request_id}] 로봇청소기 에이전트 생성 시작 (비동기)")
         try:
             # 로봇청소기 에이전트 비동기 생성
             AGENT_MEMORY["robot_cleaner_agent"] = await create_robot_cleaner_agent()
-            logger.info("로봇청소기 에이전트 생성 완료 (비동기)")
+            logger.info(f"[{request_id}] 로봇청소기 에이전트 생성 완료 (비동기)")
         except Exception as e:
-            logger.error(f"로봇청소기 에이전트 생성 실패: {str(e)}")
+            logger.error(f"[{request_id}] 로봇청소기 에이전트 생성 실패: {str(e)}")
             logger.error(traceback.format_exc())
             error_message = AIMessage(
                 content=f"죄송합니다. 로봇청소기 에이전트를 초기화하는 중에 오류가 발생했습니다: {str(e)}",
                 name="robot_cleaner_agent"
             )
-            return {"messages": state["messages"] + [error_message], "next": None}
+            return {"messages": state["messages"] + [error_message], "next": "supervisor"}
+    
+    # 사용자 쿼리 추출
+    user_message = state["messages"][-1].content if state["messages"] else ""
+    logger.info(f"[{request_id}] 사용자 쿼리: {user_message[:100]}..." if len(user_message) > 100 else user_message)
     
     # 로봇청소기 에이전트 실행
     try:
         # create_react_agent로 생성된 에이전트 실행
+        logger.info(f"[{request_id}] 로봇청소기 에이전트 실행 시작")
+        start_time = time.time()
         result = await AGENT_MEMORY["robot_cleaner_agent"].ainvoke({
-            "messages": state["messages"]  # 메시지 이력만 전달
+            "messages": [HumanMessage(content=user_message)]
         })
-        response_content = result.get("output", "")
+        elapsed_time = time.time() - start_time
+        logger.info(f"[{request_id}] 로봇청소기 에이전트 응답 (소요시간: {elapsed_time:.2f}초)")
         
-        logger.info(f"로봇청소기 에이전트 응답: {response_content[:200]}..." if len(response_content) > 200 else response_content)
+        # 응답에서 마지막 메시지 추출
+        last_message = result["messages"][-1] if "messages" in result else None
+        response_text = last_message.content if last_message else str(result)
+        logger.info(f"[{request_id}] 응답 내용: {response_text[:100]}..." if len(response_text) > 100 else response_text)
         
-        # 에이전트 응답 메시지 생성
-        agent_message = AIMessage(content=response_content, name="robot_cleaner_agent")
+        # 새로운 메시지 목록 생성 (기존 메시지 + 에이전트 응답)
+        new_messages = list(state["messages"])
+        new_messages.append(HumanMessage(content=response_text, name="robot_cleaner_agent"))
+        logger.info(f"[{request_id}] 로봇청소기 에이전트 완료, 슈퍼바이저로 반환")
         
-        # 상태 업데이트
-        return {"messages": state["messages"] + [agent_message], "next": None}
+        # 상태 업데이트 및 다음 노드 반환
+        return {
+            "messages": new_messages,
+            "next": "supervisor"
+        }
     except Exception as e:
-        logger.error(f"로봇청소기 에이전트 실행 중 오류 발생: {str(e)}")
+        logger.error(f"[{request_id}] 로봇청소기 에이전트 실행 중 오류 발생: {str(e)}")
         logger.error(traceback.format_exc())
         
-        # 오류 응답 메시지 생성
-        error_message = AIMessage(
-            content=f"죄송합니다. 로봇청소기 에이전트 실행 중에 오류가 발생했습니다: {str(e)}",
-            name="robot_cleaner_agent"
-        )
+        # 오류 발생 시 오류 메시지를 응답으로 추가
+        error_response = f"로봇청소기 제어 중 오류가 발생했습니다: {str(e)}"
+        new_messages = list(state["messages"])
+        new_messages.append(HumanMessage(content=error_response, name="robot_cleaner_agent"))
         
-        # 상태 업데이트
-        return {"messages": state["messages"] + [error_message], "next": None}
-
-# 동기식 래퍼 함수
-def robot_cleaner_agent_node(state: SmartHomeState, config: RunnableConfig):
-    """로봇청소기 에이전트 노드: 로봇청소기 제어 처리 (동기식 래퍼)"""
-    logger.info("로봇청소기 에이전트 노드 실행 (동기 래퍼)")
-    
-    # 이벤트 루프 가져오기
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        # 이벤트 루프가 없는 경우 새로 생성
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    # 비동기 함수 실행
-    return loop.run_until_complete(robot_cleaner_agent_node_async(state))
+        return {
+            "messages": new_messages,
+            "next": "supervisor"
+        }
 
 # 그래프 이미지 저장 함수
 def save_graph_as_image(graph, filename=None):
@@ -535,3 +536,19 @@ def create_smart_home_graph():
         logger.error(error_msg)
         logger.error(traceback.format_exc())
         raise 
+
+# 동기식 래퍼 함수
+def robot_cleaner_agent_node(state: SmartHomeState, config: RunnableConfig):
+    """로봇청소기 에이전트 노드: 로봇청소기 제어 처리 (동기식 래퍼)"""
+    logger.info("로봇청소기 에이전트 노드 실행 (동기 래퍼)")
+    
+    # 이벤트 루프 가져오기
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # 이벤트 루프가 없는 경우 새로 생성
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    # 비동기 함수 실행
+    return loop.run_until_complete(robot_cleaner_agent_node_async(state)) 
