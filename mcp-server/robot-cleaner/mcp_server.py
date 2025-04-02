@@ -19,7 +19,7 @@ logger = logging.getLogger("robot_cleaner_mcp_server")
 
 # FastMCP 인스턴스 생성
 mcp = FastMCP(
-    "RobotCleaner",  # MCP 서버 이름
+    "robot_cleaner",  # MCP 서버 이름
     instructions="로봇청소기를 제어하는 도구입니다. 상태 확인, 모드 변경, 방범 구역 설정 등의 기능을 제공합니다.",
     host="0.0.0.0",  # 모든 IP에서 접속 허용
     port=8001,  # 포트 번호

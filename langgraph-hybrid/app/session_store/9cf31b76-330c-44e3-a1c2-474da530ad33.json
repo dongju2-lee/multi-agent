@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "로봇청소기 지금 무슨 모드들이 가능해?",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "죄송합니다. 다시 시도했지만 로봇청소기에서 사용 가능한 모드 목록을 조회하는 중 또다시 오류가 발생했습니다. 현재로서는 어떤 모드가 사용 가능한지 확인하기 어렵습니다. 시스템에 문제가 있는 것 같습니다. 나중에 다시 시도해 주시겠어요?\n\n*응답 처리 시간: 38.19초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1743611907.833293,
+  "updated_at": 1743611908.9081879
+}

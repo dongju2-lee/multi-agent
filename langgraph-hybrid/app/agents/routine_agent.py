@@ -153,7 +153,7 @@ def routine_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         if "messages" in result and result["messages"]:
             last_message = result["messages"][-1]
             routine_message = HumanMessage(content=last_message.content, name="routine_agent")
-            logger.info(f"루틴 에이전트 응답: '{last_message.content[:100]}...'")
+            logger.info(f"루틴 에이전트 응답: '{last_message.content[:1000]}...'")
         else:
             logger.warning("루틴 에이전트가 응답을 생성하지 않음")
             routine_message = HumanMessage(content="응답을 생성할 수 없습니다.", name="routine_agent")

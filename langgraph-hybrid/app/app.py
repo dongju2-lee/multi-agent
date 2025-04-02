@@ -31,11 +31,46 @@ from logging_config import setup_logger
 from graphs.smarthome_graph import get_smarthome_graph, get_mermaid_graph
 from session_manager import FileSystemSessionManager
 
+# MCP 클라이언트 및 도구 가져오기 (사이드바 MCP 정보 표시용)
+from agents.robot_cleaner_agent import init_mcp_client, get_tools_with_details
+
 # 환경 변수 로드
 load_dotenv(override=True)
 
 # 로거 설정
 logger = setup_logger("streamlit_app")
+
+async def refresh_mcp_info():
+    """MCP 클라이언트 정보를 새로고침합니다."""
+    try:
+        logger.info("MCP 정보 새로고침 시작")
+        
+        # MCP 클라이언트 초기화 (강제로 초기화)
+        from agents.robot_cleaner_agent import _mcp_client
+        
+        # 클라이언트가 이미 초기화되어 있다면 재사용
+        if _mcp_client is not None:
+            client = _mcp_client
+            logger.info("기존 MCP 클라이언트 사용")
+        else:
+            # 새로 초기화
+            client = await init_mcp_client()
+            logger.info("새 MCP 클라이언트 초기화 완료")
+        
+        # MCP 도구 가져오기
+        tools = await get_tools_with_details()
+        logger.info(f"MCP 도구 {len(tools)}개 로드 완료")
+        
+        # 결과 반환
+        return {
+            "status": "initialized",
+            "servers": client.servers if hasattr(client, "servers") else {},
+            "tools_count": len(tools),
+            "tools": tools
+        }
+    except Exception as e:
+        logger.error(f"MCP 정보 새로고침 중 오류 발생: {str(e)}")
+        return {"status": "error", "error": str(e)}
 
 # 세션 관리자 초기화
 if "session_manager" not in st.session_state:
@@ -549,8 +584,27 @@ with st.sidebar:
             st.write("---")
             st.subheader("📋 저장된 세션 목록")
             
-            # 세션 정보 표시
-            for session_id, info in sessions.items():
+            # 페이지네이션 관련 세션 상태 초기화
+            if "session_page" not in st.session_state:
+                st.session_state.session_page = 0
+            
+            # 페이지당 세션 수
+            sessions_per_page = 3
+            
+            # 세션 ID 목록을 생성 (가장 최근에 업데이트된 순으로 정렬)
+            sorted_sessions = sorted(
+                sessions.items(),
+                key=lambda x: x[1].get('updated_at', 0),
+                reverse=True
+            )
+            
+            # 현재 페이지에 표시할 세션 목록
+            total_pages = (len(sorted_sessions) + sessions_per_page - 1) // sessions_per_page
+            start_idx = st.session_state.session_page * sessions_per_page
+            end_idx = min(start_idx + sessions_per_page, len(sorted_sessions))
+            
+            # 현재 페이지 세션 표시
+            for session_id, info in sorted_sessions[start_idx:end_idx]:
                 # 현재 세션 표시
                 is_current = session_id == st.session_state.thread_id
                 is_active_tab = session_id in st.session_state.active_tabs
@@ -593,6 +647,58 @@ with st.sidebar:
                         # 삭제 버튼
                         if st.button(f"🗑️ 삭제", key=f"delete_{session_id}", use_container_width=True):
                             delete_session(session_id)
+            
+            # 페이지네이션 UI
+            if total_pages > 1:
+                st.write("---")
+                pagination_cols = st.columns(min(total_pages + 2, 9))  # 최대 7개의 페이지 버튼 + 이전/다음 버튼
+                
+                # 이전 페이지 버튼
+                with pagination_cols[0]:
+                    if st.button("◀", key="prev_page", disabled=(st.session_state.session_page <= 0)):
+                        st.session_state.session_page = max(0, st.session_state.session_page - 1)
+                        st.rerun()
+                
+                # 페이지 번호 버튼
+                max_visible_pages = min(total_pages, 7)  # 한 번에 최대 7개의 페이지 번호만 표시
+                
+                # 현재 페이지 주변의 페이지 번호 표시 로직
+                if total_pages <= max_visible_pages:
+                    # 페이지 수가 적으면 모든 페이지 표시
+                    page_range = range(total_pages)
+                else:
+                    # 현재 페이지 주변의 페이지만 표시
+                    half_visible = max_visible_pages // 2
+                    if st.session_state.session_page < half_visible:
+                        # 처음 페이지에 가까우면
+                        page_range = range(max_visible_pages)
+                    elif st.session_state.session_page >= total_pages - half_visible:
+                        # 마지막 페이지에 가까우면
+                        page_range = range(total_pages - max_visible_pages, total_pages)
+                    else:
+                        # 중간 페이지면
+                        page_range = range(st.session_state.session_page - half_visible, 
+                                          st.session_state.session_page + half_visible + 1)
+                
+                for i, page_idx in enumerate(page_range, 1):
+                    with pagination_cols[i]:
+                        # 현재 페이지는 강조 표시
+                        page_num = page_idx + 1
+                        if page_idx == st.session_state.session_page:
+                            st.markdown(f"**{page_num}**")
+                        else:
+                            if st.button(f"{page_num}", key=f"page_{page_idx}"):
+                                st.session_state.session_page = page_idx
+                                st.rerun()
+                
+                # 다음 페이지 버튼
+                with pagination_cols[-1]:
+                    if st.button("▶", key="next_page", disabled=(st.session_state.session_page >= total_pages - 1)):
+                        st.session_state.session_page = min(total_pages - 1, st.session_state.session_page + 1)
+                        st.rerun()
+                
+                # 현재 페이지 정보 표시
+                st.write(f"페이지: {st.session_state.session_page + 1}/{total_pages}")
         else:
             st.info("저장된 세션이 없습니다.")
     except Exception as e:
@@ -625,6 +731,101 @@ with st.sidebar:
                     st.write(f"{i}. **{agent}**")
         except ImportError:
             st.write("🔹 **에이전트 정보를 불러올 수 없습니다.**")
+        
+        # MCP 서버 정보 표시
+        with st.expander("🔌 MCP 서버 및 도구 정보"):
+            try:
+                # MCP 정보 가져오기
+                if "mcp_info" not in st.session_state:
+                    with st.spinner("MCP 서버 정보 가져오는 중..."):
+                        try:
+                            # MCP 클라이언트 설정 정보 가져오기
+                            from agents.robot_cleaner_agent import _mcp_client
+                            
+                            # 만약 MCP 클라이언트가 초기화되지 않았으면 초기화
+                            if _mcp_client is None:
+                                st.session_state.mcp_info = {"status": "not_initialized"}
+                            else:
+                                # MCP 클라이언트가 이미 초기화되어 있음
+                                st.session_state.mcp_info = {"status": "initialized"}
+                                
+                                # 서버 설정 가져오기
+                                if hasattr(_mcp_client, "servers"):
+                                    st.session_state.mcp_info["servers"] = _mcp_client.servers
+                                
+                                # 도구 정보 가져오기 (비동기 함수 호출)
+                                try:
+                                    tools_result = st.session_state.event_loop.run_until_complete(get_tools_with_details())
+                                    st.session_state.mcp_info["tools_count"] = len(tools_result)
+                                    st.session_state.mcp_info["tools"] = tools_result
+                                except Exception as e:
+                                    st.session_state.mcp_info["tools_error"] = str(e)
+                        except Exception as e:
+                            st.session_state.mcp_info = {"status": "error", "error": str(e)}
+                
+                # MCP 정보 표시
+                mcp_info = st.session_state.get("mcp_info", {})
+                
+                if mcp_info.get("status") == "not_initialized":
+                    st.warning("MCP 클라이언트가 아직 초기화되지 않았습니다. 로봇청소기 관련 질문을 하면 자동으로 초기화됩니다.")
+                
+                elif mcp_info.get("status") == "error":
+                    st.error(f"MCP 정보 가져오기 실패: {mcp_info.get('error', '알 수 없는 오류')}")
+                
+                elif mcp_info.get("status") == "initialized":
+                    st.success("MCP 클라이언트가 초기화되어 있습니다.")
+                    
+                    # 서버 정보 표시
+                    st.write("##### MCP 서버 정보")
+                    if "servers" in mcp_info:
+                        for server_name, server_info in mcp_info["servers"].items():
+                            st.write(f"- **{server_name}**: {server_info.get('url', '알 수 없음')}")
+                    else:
+                        st.write("서버 정보를 가져올 수 없습니다.")
+                    
+                    # 도구 정보 표시
+                    st.write("##### MCP 도구 정보")
+                    if "tools_error" in mcp_info:
+                        st.error(f"도구 정보 가져오기 실패: {mcp_info['tools_error']}")
+                    elif "tools_count" in mcp_info:
+                        st.write(f"총 **{mcp_info['tools_count']}개**의 MCP 도구가 있습니다.")
+                        
+                        # 도구 목록 표시
+                        if "tools" in mcp_info and mcp_info["tools"]:
+                            tool_list = []
+                            for i, tool in enumerate(mcp_info["tools"], 1):
+                                tool_name = getattr(tool, "name", f"Tool-{i}")
+                                tool_list.append(tool_name)
+                            
+                            # 도구 목록을 깔끔하게 표시
+                            st.write("도구 목록:")
+                            cols = st.columns(2)
+                            mid_point = len(tool_list) // 2 + len(tool_list) % 2
+                            
+                            with cols[0]:
+                                for i, tool in enumerate(tool_list[:mid_point], 1):
+                                    st.write(f"{i}. {tool}")
+                            
+                            with cols[1]:
+                                for i, tool in enumerate(tool_list[mid_point:], mid_point+1):
+                                    st.write(f"{i}. {tool}")
+                    else:
+                        st.write("도구 정보를 가져올 수 없습니다.")
+                
+                # 수동 초기화 버튼
+                if st.button("MCP 정보 새로고침", key="refresh_mcp"):
+                    try:
+                        with st.spinner("MCP 서버 연결 및 도구 정보 새로고침 중..."):
+                            # 비동기 함수 호출
+                            st.session_state.mcp_info = st.session_state.event_loop.run_until_complete(refresh_mcp_info())
+                            st.success("MCP 정보가 새로고침되었습니다.")
+                    except Exception as e:
+                        st.error(f"MCP 정보 새로고침 실패: {str(e)}")
+                        st.session_state.mcp_info = {"status": "error", "error": str(e)}
+                    st.rerun()
+                
+            except Exception as e:
+                st.error(f"MCP 정보 표시 중 오류 발생: {str(e)}")
     
     # 구분선
     st.divider()

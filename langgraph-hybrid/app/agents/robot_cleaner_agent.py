@@ -96,7 +96,7 @@ async def get_robot_cleaner_agent_async():
             llm = ChatVertexAI(
                 model=model_name,
                 temperature=0.1,
-                max_output_tokens=2048
+                max_output_tokens=20000
             )
             logger.info("LLM 초기화 완료")
             
@@ -123,7 +123,7 @@ async def get_robot_cleaner_agent_async():
                 llm, 
                 tools, 
                 prompt=system_prompt,
-                checkpointer=MemorySaver()
+                # checkpointer=MemorySaver()
             )
             logger.info("ReAct 에이전트 생성 완료")
             
@@ -181,7 +181,7 @@ def robot_cleaner_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         if "messages" in result and result["messages"]:
             last_message = result["messages"][-1]
             robot_cleaner_message = HumanMessage(content=last_message.content, name="robot_cleaner_agent")
-            logger.info(f"로봇청소기 에이전트 응답: '{last_message.content[:100]}...'")
+            logger.info(f"로봇청소기 에이전트 응답: '{last_message.content[:1000]}...'")
         else:
             logger.warning("로봇청소기 에이전트가 응답을 생성하지 않음")
             robot_cleaner_message = HumanMessage(content="응답을 생성할 수 없습니다.", name="robot_cleaner_agent")
