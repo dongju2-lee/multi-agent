@@ -2,11 +2,12 @@ import os
 import streamlit as st
 import asyncio
 import nest_asyncio
-from typing import Optional
+from typing import Optional, Dict, Any, List
 import uuid
 import json
 import sys
 import time
+import datetime
 
 # 현재 디렉토리를 시스템 경로에 추가하여 상대 임포트가 가능하도록 함
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,12 +29,19 @@ from logging_config import setup_logger
 
 # 스마트홈 에이전트 및 그래프 가져오기
 from graphs.smarthome_graph import get_smarthome_graph, get_mermaid_graph
+from session_manager import FileSystemSessionManager
 
 # 환경 변수 로드
 load_dotenv(override=True)
 
 # 로거 설정
 logger = setup_logger("streamlit_app")
+
+# 세션 관리자 초기화
+if "session_manager" not in st.session_state:
+    session_store_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "session_store")
+    st.session_state.session_manager = FileSystemSessionManager(session_dir=session_store_path)
+    logger.info(f"세션 관리자 초기화 완료 (저장 위치: {session_store_path})")
 
 # 세션 상태에 초기화 진행 플래그 추가 (이미 완료했지만 아직 새로고침 안된 상태 구분)
 if "initialization_completed" not in st.session_state:
@@ -52,6 +60,199 @@ if "session_initialized" not in st.session_state:
     st.session_state.graph = None  # 그래프 객체 저장 공간
     st.session_state.history = []  # 대화 기록 저장 리스트
     st.session_state.thread_id = str(uuid.uuid4())  # 세션 고유 ID
+
+# 탭 관리를 위한 세션 상태 초기화
+if "active_tabs" not in st.session_state:
+    st.session_state.active_tabs = []  # 열려있는 세션 탭 목록
+    st.session_state.active_session_id = None  # 현재 활성화된 세션 ID
+
+# 세션 관리 함수들
+def create_new_session():
+    """새로운 세션을 생성합니다."""
+    # 현재 세션 저장
+    if st.session_state.session_initialized and st.session_state.history:
+        save_current_session()
+    
+    # 새 세션 생성
+    session_id = st.session_state.session_manager.create_session()
+    st.session_state.thread_id = session_id
+    st.session_state.history = []
+    
+    # 새 세션을 메인 탭으로 설정
+    st.session_state.active_session_id = session_id
+    
+    # 탭 목록 업데이트
+    if session_id not in st.session_state.active_tabs:
+        st.session_state.active_tabs.append(session_id)
+    
+    logger.info(f"새 세션 생성됨: {session_id}")
+    
+    # 세션 상태 UI 업데이트
+    st.success("✅ 새 세션이 생성되었습니다!")
+    st.rerun()
+
+def dict_to_langchain_message(message_dict):
+    """
+    딕셔너리 형식의 메시지를 LangChain 메시지 객체로 변환합니다.
+    
+    Args:
+        message_dict: 딕셔너리 형식의 메시지
+    
+    Returns:
+        LangChain 메시지 객체
+    """
+    role = message_dict.get("role", "")
+    content = message_dict.get("content", "")
+    name = message_dict.get("name")
+    
+    if role == "user":
+        return HumanMessage(content=content, name=name)
+    elif role == "assistant":
+        return AIMessage(content=content, name=name)
+    elif role == "agent":
+        # agent 역할은 AIMessage로 변환하고 이름 보존
+        return AIMessage(content=content, name=name)
+    else:
+        # 기본적으로 HumanMessage 반환
+        return HumanMessage(content=content)
+
+def save_current_session():
+    """현재 세션을 저장합니다."""
+    if not st.session_state.session_initialized:
+        logger.warning("초기화되지 않은 세션을 저장하려고 시도함")
+        return False
+    
+    try:
+        # 딕셔너리 메시지를 LangChain 메시지 객체로 변환
+        langchain_messages = []
+        for msg in st.session_state.history:
+            try:
+                langchain_messages.append(dict_to_langchain_message(msg))
+            except Exception as e:
+                logger.warning(f"메시지 변환 중 오류 발생: {str(e)}")
+        
+        # 세션 상태 생성
+        session_data = {
+            "messages": langchain_messages,
+            "next": None,
+        }
+        
+        # 세션 저장
+        st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
+        logger.info(f"세션 {st.session_state.thread_id} 저장됨 (메시지 수: {len(st.session_state.history)})")
+        return True
+    except Exception as e:
+        import traceback
+        logger.error(f"세션 저장 실패: {str(e)}")
+        logger.error(traceback.format_exc())
+        return False
+
+def load_session(session_id: str):
+    """지정된 세션을 불러옵니다."""
+    # 세션 데이터 가져오기
+    session_data = st.session_state.session_manager.get_session(session_id)
+    if not session_data:
+        logger.warning(f"존재하지 않는 세션을 불러오려고 시도함: {session_id}")
+        st.error("❌ 세션을 불러올 수 없습니다!")
+        return False
+    
+    # 현재 세션 저장
+    if st.session_state.session_initialized and st.session_state.history:
+        save_current_session()
+    
+    # 탭 목록에 추가
+    if session_id not in st.session_state.active_tabs:
+        st.session_state.active_tabs.append(session_id)
+    
+    # 현재 활성 세션으로 설정
+    st.session_state.active_session_id = session_id
+    
+    logger.info(f"세션 {session_id} 불러오기 완료")
+    st.success(f"✅ 세션 '{session_id[:8]}...'이(가) 열렸습니다!")
+    st.rerun()
+
+def close_tab(session_id: str):
+    """열려있는 세션 탭을 닫습니다."""
+    if session_id in st.session_state.active_tabs:
+        # 탭 목록에서 제거
+        st.session_state.active_tabs.remove(session_id)
+        
+        # 현재 활성화된 세션이 닫히는 경우, 다른 세션으로 전환
+        if st.session_state.active_session_id == session_id:
+            if st.session_state.active_tabs:
+                # 다른 열린 탭이 있으면 첫 번째로 전환
+                st.session_state.active_session_id = st.session_state.active_tabs[0]
+            else:
+                # 열린 탭이 없으면 현재 세션 유지
+                st.session_state.active_session_id = st.session_state.thread_id
+        
+        logger.info(f"세션 탭 닫힘: {session_id}")
+        st.rerun()
+
+def switch_tab(session_id: str):
+    """다른 세션 탭으로 전환합니다."""
+    # 현재 세션 저장
+    if st.session_state.session_initialized and st.session_state.history:
+        save_current_session()
+    
+    # 활성 세션 전환
+    st.session_state.active_session_id = session_id
+    
+    logger.info(f"세션 탭 전환: {session_id}")
+    st.rerun()
+
+def get_session_history(session_id: str) -> List[Dict]:
+    """특정 세션의 대화 기록을 가져옵니다."""
+    # 현재 세션인 경우 현재 기록 반환
+    if session_id == st.session_state.thread_id:
+        return st.session_state.history
+    
+    # 저장된 세션 데이터 가져오기
+    session_data = st.session_state.session_manager.get_session(session_id)
+    if not session_data:
+        return []
+    
+    # LangChain 메시지 객체를 딕셔너리 형식으로 변환
+    history = []
+    for msg in session_data.get("messages", []):
+        if hasattr(msg, "type") and msg.type == "human":
+            history.append({"role": "user", "content": msg.content})
+        elif hasattr(msg, "type") and msg.type == "ai":
+            # 에이전트 메시지 분리
+            if hasattr(msg, "name") and msg.name:
+                history.append({"role": "agent", "name": msg.name, "content": msg.content})
+            else:
+                history.append({"role": "assistant", "content": msg.content})
+    
+    return history
+
+def delete_session(session_id: str):
+    """지정된 세션을 삭제합니다."""
+    # 세션이 현재 세션인지 확인
+    is_current = session_id == st.session_state.thread_id
+    
+    # 세션 삭제
+    success = st.session_state.session_manager.delete_session(session_id)
+    if success:
+        logger.info(f"세션 {session_id} 삭제됨")
+        
+        # 현재 세션이 삭제된 경우 새 세션 생성
+        if is_current:
+            st.session_state.thread_id = str(uuid.uuid4())
+            st.session_state.history = []
+            st.success("✅ 현재 세션이 삭제되었습니다. 새 세션으로 전환합니다.")
+        else:
+            st.success(f"✅ 세션 '{session_id[:8]}...'이(가) 삭제되었습니다!")
+        
+        st.rerun()
+    else:
+        logger.warning(f"존재하지 않는 세션을 삭제하려고 시도함: {session_id}")
+        st.error("❌ 세션 삭제에 실패했습니다!")
+
+def format_timestamp(timestamp: float) -> str:
+    """타임스탬프를 읽기 쉬운 형식으로 변환합니다."""
+    dt = datetime.datetime.fromtimestamp(timestamp)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 # --- 함수 정의 부분 ---
 def print_message():
@@ -331,12 +532,79 @@ with st.sidebar:
     # 시스템 상태 표시
     initialization_status = "✅ 초기화됨" if st.session_state.session_initialized else "🔄 초기화 중..."
     st.write(f"시스템 상태: {initialization_status}")
-    st.write(f"세션 ID: {st.session_state.thread_id[:8]}...")
+    st.write(f"현재 세션 ID: {st.session_state.thread_id[:8]}...")
+    
+    # 세션 관리 섹션
+    st.divider()
+    st.subheader("💾 세션 관리")
+    
+    # 새 세션 생성 버튼
+    if st.button("➕ 새 세션 생성", use_container_width=True):
+        create_new_session()
+    
+    # 이전 세션 목록
+    try:
+        sessions = st.session_state.session_manager.list_sessions()
+        if sessions:
+            st.write("---")
+            st.subheader("📋 저장된 세션 목록")
+            
+            # 세션 정보 표시
+            for session_id, info in sessions.items():
+                # 현재 세션 표시
+                is_current = session_id == st.session_state.thread_id
+                is_active_tab = session_id in st.session_state.active_tabs
+                
+                # 세션 라벨 구성
+                status_indicator = ""
+                if is_current:
+                    status_indicator = "🟢 "  # 현재 세션
+                elif is_active_tab:
+                    status_indicator = "🔵 "  # 열린 탭
+                
+                session_label = f"{status_indicator}{session_id[:8]}... - 메시지 {info.get('message_count', 0)}개"
+                
+                with st.expander(session_label):
+                    # 세션 메타데이터 표시
+                    if "created_at" in info:
+                        st.write(f"생성일시: {format_timestamp(info['created_at'])}")
+                    if "updated_at" in info:
+                        st.write(f"최종수정: {format_timestamp(info['updated_at'])}")
+                    
+                    # 세션 관리 버튼
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        # 열기/전환 버튼
+                        if is_active_tab:
+                            if st.button(f"📂 전환", key=f"switch_{session_id}", use_container_width=True):
+                                switch_tab(session_id)
+                        else:
+                            if st.button(f"📂 열기", key=f"load_{session_id}", use_container_width=True):
+                                load_session(session_id)
+                    
+                    with col2:
+                        # 닫기 버튼 (활성 탭일 경우에만)
+                        if is_active_tab and not is_current:
+                            if st.button(f"🔒 닫기", key=f"close_{session_id}", use_container_width=True):
+                                close_tab(session_id)
+                    
+                    with col3:
+                        # 삭제 버튼
+                        if st.button(f"🗑️ 삭제", key=f"delete_{session_id}", use_container_width=True):
+                            delete_session(session_id)
+        else:
+            st.info("저장된 세션이 없습니다.")
+    except Exception as e:
+        logger.error(f"세션 목록 조회 실패: {str(e)}")
+        st.error(f"세션 목록을 불러올 수 없습니다: {str(e)}")
+    
+    # 구분선
+    st.divider()
     
     # 시스템 정보 확장 (에이전트 정보)
     if st.session_state.session_initialized:
         # 모델 정보
-        st.write("---")
         st.subheader("🤖 에이전트 정보")
         
         # 환경 변수에서 모델 정보 가져오기
@@ -396,14 +664,6 @@ with st.sidebar:
             step=0.01,
             format="%.2f초"
         )
-    
-    # 대화 초기화 버튼
-    if st.button("🔄 대화 초기화", use_container_width=True):
-        st.session_state.history = []
-        st.session_state.thread_id = str(uuid.uuid4())
-        st.success("대화가 초기화되었습니다.")
-        st.rerun()
-
 
 # --- 기본 세션 초기화 (초기화되지 않은 경우) ---
 if not st.session_state.session_initialized:
@@ -435,9 +695,67 @@ if not st.session_state.session_initialized:
         st.session_state.reloaded = True
         st.rerun()
 
+# --- 세션이 종료될 때 현재 세션 저장 ---
+def save_on_exit():
+    if st.session_state.session_initialized and st.session_state.history:
+        save_current_session()
 
-# --- 대화 기록 출력 ---
-print_message()
+# 종료 이벤트 핸들러 등록 (Streamlit에서는 직접 지원하지 않지만, 세션이 변경될 때마다 저장)
+if st.session_state.session_initialized and st.session_state.history:
+    # 세션 데이터가 변경될 때마다 저장 (페이지 리로드 시)
+    save_current_session()
+
+# --- 탭 인터페이스 구현 ---
+# 활성화된 탭이 있는 경우 탭 인터페이스 표시
+if st.session_state.active_tabs:
+    # 탭 이름 목록 생성
+    tab_labels = []
+    for tab_id in st.session_state.active_tabs:
+        # 현재 세션인 경우 표시
+        if tab_id == st.session_state.thread_id:
+            tab_labels.append(f"🏠 현재 ({tab_id[:8]}...)")
+        else:
+            # 세션 메시지 수 가져오기
+            try:
+                sessions = st.session_state.session_manager.list_sessions()
+                msg_count = sessions.get(tab_id, {}).get("message_count", 0)
+                tab_labels.append(f"📜 {tab_id[:8]}... ({msg_count}개)")
+            except:
+                tab_labels.append(f"📜 {tab_id[:8]}...")
+    
+    # 탭 생성
+    tabs = st.tabs(tab_labels)
+    
+    # 각 탭 내용 채우기
+    for i, tab_id in enumerate(st.session_state.active_tabs):
+        with tabs[i]:
+            # 현재 활성 세션으로 설정 (탭 클릭 시)
+            if st.session_state.active_session_id != tab_id:
+                st.session_state.active_session_id = tab_id
+            
+            # 현재 세션이 아닌 경우 읽기 전용 안내와 닫기 버튼 표시
+            if tab_id != st.session_state.thread_id:
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    st.info("⚠️ 이 세션은 읽기 전용입니다")
+                with col2:
+                    if st.button("❌ 닫기", key=f"tab_close_{tab_id}", help="이 탭 닫기", use_container_width=True):
+                        close_tab(tab_id)
+                        st.rerun()
+            
+            # 지정된 세션의 대화 기록 표시
+            history = get_session_history(tab_id)
+            for message in history:
+                if message["role"] == "user":
+                    st.chat_message("user").markdown(message["content"])
+                elif message["role"] == "assistant":
+                    st.chat_message("assistant").markdown(message["content"])
+                elif message["role"] == "agent":
+                    with st.chat_message("assistant"):
+                        st.info(f"**{message['name']}**: {message['content']}")
+else:
+    # --- 대화 기록 출력 ---
+    print_message()
 
 # --- 사용자 입력 및 처리 ---
 user_query = st.chat_input("💬 스마트홈 관리 명령이나 질문을 입력하세요")
@@ -468,6 +786,9 @@ if user_query:
         # 대화 기록 저장
         st.session_state.history.append({"role": "user", "content": user_query})
         st.session_state.history.append({"role": "assistant", "content": response})
+        
+        # 세션 자동 저장
+        save_current_session()
         
         # 페이지 리로드
         st.rerun()
