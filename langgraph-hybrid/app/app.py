@@ -146,6 +146,9 @@ async def process_query_streaming(query: str, response_placeholder, timeout_seco
                 if "messages" in response and response["messages"]:
                     final_text = response["messages"][-1].content
                     
+                    # 사용자 설정 워드 딜레이 가져오기
+                    word_delay = st.session_state.get("word_delay", 0.01)
+                    
                     # 응답 텍스트를 단어 단위로 스트리밍처럼 표시 (실제 스트리밍 대신 시뮬레이션)
                     words = final_text.split()
                     current_text = []
@@ -154,8 +157,8 @@ async def process_query_streaming(query: str, response_placeholder, timeout_seco
                         current_text.append(word)
                         display_text = " ".join(current_text)
                         response_placeholder.markdown(display_text)
-                        # 단어 사이 짧은 딜레이
-                        await asyncio.sleep(0.01)
+                        # 단어 사이 사용자 설정 딜레이 적용
+                        await asyncio.sleep(word_delay)
                     
                     # 처리 시간 계산 및 표시
                     end_time = time.time()
@@ -330,26 +333,69 @@ with st.sidebar:
     st.write(f"시스템 상태: {initialization_status}")
     st.write(f"세션 ID: {st.session_state.thread_id[:8]}...")
     
+    # 시스템 정보 확장 (에이전트 정보)
+    if st.session_state.session_initialized:
+        # 모델 정보
+        st.write("---")
+        st.subheader("🤖 에이전트 정보")
+        
+        # 환경 변수에서 모델 정보 가져오기
+        model_name = os.getenv("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        
+        # 에이전트 정보 표시
+        st.write(f"🔹 **슈퍼바이저 모델**: {model_name}")
+        
+        # 에이전트 그래프에서 에이전트 수 가져오기
+        try:
+            from agents.supervisor_agent import members
+            agent_count = len(members)
+            st.write(f"🔹 **총 에이전트 수**: {agent_count}개")
+            
+            # 에이전트 목록
+            with st.expander("에이전트 목록 보기"):
+                for i, agent in enumerate(members, 1):
+                    st.write(f"{i}. **{agent}**")
+        except ImportError:
+            st.write("🔹 **에이전트 정보를 불러올 수 없습니다.**")
+    
     # 구분선
     st.divider()
     
-    # 그래프 시각화 표시
-    st.subheader("🔄 에이전트 그래프")
+    # 그래프 시각화 표시 (접었다 펼 수 있는 기능)
     if st.session_state.session_initialized:
-        try:
-            # 그래프 이미지 생성
-            mermaid_graph = get_mermaid_graph()
-            st.image(mermaid_graph, use_container_width=True)
-        except Exception as e:
-            st.error(f"그래프 이미지 생성 실패: {str(e)}")
+        if st.checkbox("🔄 에이전트 그래프 표시", value=True):
+            try:
+                # 그래프 이미지 생성
+                with st.spinner("그래프 이미지 생성 중..."):
+                    mermaid_graph = get_mermaid_graph()
+                    st.image(mermaid_graph, use_container_width=True)
+            except Exception as e:
+                st.error(f"그래프 이미지 생성 실패: {str(e)}")
     else:
         st.info("시스템 초기화 중입니다. 잠시만 기다려주세요...")
     
     # 구분선
     st.divider()
     
+    # 시스템 설정 섹션
+    st.subheader("⚙️ 시스템 설정")
+    
     # 스트리밍 모드 토글
     st.session_state.streaming_mode = st.toggle("스트리밍 응답 활성화", value=True)
+    
+    # 응답 속도 조절 (단어 표시 간격)
+    if st.session_state.get("streaming_mode", True):
+        if "word_delay" not in st.session_state:
+            st.session_state.word_delay = 0.01
+        
+        st.session_state.word_delay = st.slider(
+            "응답 속도 조절", 
+            min_value=0.0, 
+            max_value=0.05, 
+            value=st.session_state.word_delay,
+            step=0.01,
+            format="%.2f초"
+        )
     
     # 대화 초기화 버튼
     if st.button("🔄 대화 초기화", use_container_width=True):
