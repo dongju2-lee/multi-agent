@@ -1,0 +1,43 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "루틴 뭐있어",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "현재 등록된 루틴이 없습니다.\n\n새로운 루틴을 만들고 싶으시면 알려주세요. 예를 들어, \"아침 7시에 조명을 켜고 날씨를 알려줘\" 와 같이 말씀해주시면 루틴 생성을 도와드릴 수 있습니다.\n\n*응답 처리 시간: 16.35초*",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "HumanMessage",
+      "content": "에어컨 몇도야",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "현재 에어컨 설정 온도는 29도입니다.\n\n*응답 처리 시간: 21.07초*",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "HumanMessage",
+      "content": "로봇청소기 지금 무슨 모드야",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "⏱️ 요청 시간이 60초를 초과했습니다. 나중에 다시 시도해 주세요.\n\n*응답 처리 시간: 60.00초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1743609712.937106,
+  "updated_at": 1743609903.886056
+}
