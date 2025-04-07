@@ -17,7 +17,7 @@ logger = setup_logger("supervisor_agent")
 load_dotenv()
 
 # 슈퍼바이저에서 관리할 에이전트 멤버 목록
-members = ["device_agent", "routine_agent", "robot_cleaner_agent"]
+members = ["routine_agent", "induction_agent", "refrigerator_agent", "food_manager_agent", "microwave_agent", "gemini_search_agent"]
 # 라우팅 옵션 (모든 멤버 + 종료)
 options = members + ["FINISH"]
 
@@ -27,21 +27,30 @@ logger.info(f"라우팅 옵션: {options}")
 # 슈퍼바이저 시스템 프롬프트
 system_prompt = """당신은 스마트홈 시스템의 슈퍼바이저 에이전트입니다. 사용자의 요청을 분석하여 적절한 에이전트에 작업을 할당합니다.
 
-당신은 다음 세 가지 에이전트 중 하나를 선택해야 합니다:
+당신은 다음 에이전트 중 하나를 선택해야 합니다:
 1. routine_agent: 스마트홈 루틴 관리를 담당합니다. 루틴 등록, 조회, 삭제, 제안 등의 작업을 수행합니다.
-2. device_agent: 가전제품(냉장고, 에어컨) 제어를 담당합니다. 전원 제어, 모드 변경, 상태 확인 등의 작업을 수행합니다.
-3. robot_cleaner_agent: 로봇청소기 제어를 담당합니다. 로봇청소기의, 전원 제어, 모드 변경, 방범 구역 설정 등의 작업을 수행합니다.
+2. induction_agent: 인덕션 제어를 담당합니다. 인덕션의 전원 제어, 타이머 설정, 조리 시작 등의 작업을 수행합니다.
+3. refrigerator_agent: 냉장고 제어를 담당합니다. 냉장고의 쿠킹 상태 조회와 레시피 정보 표시 기능을 제공합니다.
+4. food_manager_agent: 음식 관리를 담당합니다. 사용 가능한 재료 확인과 레시피 추천 기능을 제공합니다.
+5. microwave_agent: 전자레인지 제어를 담당합니다. 전자레인지의 전원 제어, 모드 변경, 타이머 설정, 요리 시작 등의 작업을 수행합니다.
+6. gemini_search_agent: 검색 쿼리에 대한 응답을 제공합니다. 일반 지식, 개념 설명, 요약 등의 정보를 제공합니다.
 
 사용자의 요청을 분석하여 다음 중 하나를 선택하세요:
 - "routine_agent": 루틴 관련 요청인 경우 (루틴 등록, 조회, 삭제, 제안)
-- "device_agent": 냉장고와 에어컨 제어 관련 요청인 경우 (냉장고, 에어컨의 전원, 모드, 상태 변경 등)
-- "robot_cleaner_agent": 로봇청소기 제어 관련 요청인 경우 (로봇청소기의 전원, 모드, 방범 구역 설정 등)
+- "induction_agent": 인덕션 제어 관련 요청인 경우 (인덕션의 전원, 타이머, 조리 시작 등)
+- "refrigerator_agent": 냉장고 관련 요청인 경우 (쿠킹 상태 확인, 레시피 정보 표시 등)
+- "food_manager_agent": 음식 재료나 레시피 관련 요청인 경우 (재료 확인, 레시피 추천 등)
+- "microwave_agent": 전자레인지 제어 관련 요청인 경우 (전자레인지의 전원, 모드, 타이머, 요리 시작 등)
+- "gemini_search_agent": 일반적인 정보나 지식에 대해 질문인 경우 (사실 조회, 개념 설명, 요약 등)
 - "FINISH": 모든 작업이 완료되어 더 이상 에이전트 호출이 필요 없는 경우
 
 에이전트 선택 기준:
 - 사용자가 루틴에 대해 언급하거나 루틴 관련 작업을 요청하는 경우 -> routine_agent
-- 사용자가 로봇청소기에 대해 언급하거나 로봇청소기 관련 작업을 요청하는 경우 -> robot_cleaner_agent
-- 사용자가 냉장고나 에어컨 제어를 요청하는 경우 -> device_agent
+- 사용자가 인덕션 제어를 요청하는 경우 -> induction_agent
+- 사용자가 냉장고 쿠킹 상태나 레시피 표시를 요청하는 경우 -> refrigerator_agent
+- 사용자가 음식 재료나 레시피에 대해 질문하는 경우 -> food_manager_agent
+- 사용자가 전자레인지 제어를 요청하는 경우 -> microwave_agent
+- 사용자가 일반적인 정보나 지식에 대해 질문하는 경우 -> gemini_search_agent
 - 이전 에이전트의 응답만으로 사용자의 요청이 완료된 경우 -> FINISH
 
 항상 정확하고 명확한 결정을 내려주세요.

@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "지금 전자레인지 전원 상태",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "지금 전자레인지 전원 상태\n\n*응답 처리 시간: 5.67초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744044075.968399,
+  "updated_at": 1744044076.108431
+}

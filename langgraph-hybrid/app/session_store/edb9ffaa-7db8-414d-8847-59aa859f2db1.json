@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "혹시 지금 전자레인지 켜져있어?",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "혹시 지금 전자레인지 켜져있어?\n\n*응답 처리 시간: 5.46초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744043732.813395,
+  "updated_at": 1744043732.9358988
+}

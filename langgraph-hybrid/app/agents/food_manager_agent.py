@@ -14,7 +14,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # 로거 설정
-logger = setup_logger("routine_agent")
+logger = setup_logger("food_manager_agent")
 
 # 환경 변수 로드
 load_dotenv()
@@ -32,8 +32,8 @@ async def init_mcp_client():
         
         # MCP 서버 설정
         mcp_config = {
-            "routine": {
-                "url": "http://0.0.0.0:8007/sse",
+            "food_manager": {
+                "url": "http://0.0.0.0:8004/sse",
                 "transport": "sse",
             },
         }
@@ -79,15 +79,15 @@ async def get_tools_with_details() -> List:
     return tools
 
 
-async def get_routine_agent_async():
-    """루틴 관리 에이전트의 싱글톤 인스턴스를 비동기적으로 생성합니다."""
+async def get_food_manager_agent_async():
+    """음식 매니저 에이전트의 싱글톤 인스턴스를 비동기적으로 생성합니다."""
     global _agent_instance
     if _agent_instance is None:
-        logger.info("루틴 관리 에이전트 초기화 시작")
+        logger.info("음식 매니저 에이전트 초기화 시작")
         
         # 모델 설정 가져오기
         model_name = os.getenv("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
-        logger.info(f"루틴 관리 에이전트 LLM 모델: {model_name}")
+        logger.info(f"음식 매니저 에이전트 LLM 모델: {model_name}")
         
         try:
             # LLM 초기화
@@ -107,39 +107,13 @@ async def get_routine_agent_async():
             # 시스템 프롬프트 설정
             logger.info("시스템 프롬프트 구성 중...")
             system_prompt = ChatPromptTemplate.from_messages([
-        ("system", """스마트홈 루틴 관리 에이전트입니다. 당신은 사용자의 일상생활을 더 편리하게 만드는 스마트홈 루틴을 관리합니다.
+            ("system", """당신은 음식 매니저를 담당하는 스마트홈 에이전트입니다. 
+사용 가능한 재료를 확인하고, 해당 재료로 만들 수 있는 레시피를 찾을 수 있습니다.
 
-당신은 다음과 같은 작업을 수행할 수 있습니다:
-1. 새로운 루틴 등록
-2. 기존 루틴 목록 조회
-3. 루틴 삭제
-4. 새로운 루틴 제안
-
-사용자가 요청한 작업을 수행하기 위해 적절한 MCP 도구를 사용하세요. 
-사용자가 루틴 생성을 요청하면, 적절한 이름과 단계별 작업 흐름을 포함하여 등록하세요.
-루틴의 각 단계는 가전제품의 동작을 명확히 설명해야 합니다.
-
-루틴 목록을 조회했을 때는 반드시 조회한 루틴 목록을 자세히 보여주세요. 단순히 "목록을 확인했습니다"라고 응답하지 말고,
-실제 루틴의 이름과 세부 내용을 포함하여 명확하게 보여주세요. 
-
-도구 호출 결과에 루틴 정보가 포함되어 있을 경우, 그 정보를 그대로 사용자에게 전달해야 합니다.
-결과가 빈 목록이라면 "현재 등록된 루틴이 없습니다"라고 명확히 알려주세요.
-
-예시 루틴 형식:
-- 이름: "아침 루틴"
-- 흐름: 
-  1. 에어컨을 켠다
-  2. 에어컨 온도를 24도로 설정한다
-  3. 로봇청소기를 켠다
-  4. 냉장고 모드를 일반 모드로 변경한다
-
-사용자가 루틴 제안을 요청하면, 사용자의 설명을 바탕으로 적절한 루틴을 제안하세요.
-모든 응답은 명확하고 친절하게 제공하세요.
-
-응답은 항상 한국어로 제공하세요.
-"""),
-        MessagesPlaceholder(variable_name="messages"),
-    ])
+응답은 항상 한국어로 제공하세요. 제공된 MCP 도구를 사용하여 음식 관련 정보를 검색하세요."""),
+            MessagesPlaceholder(variable_name="messages")
+        ])
+            
             logger.info("시스템 프롬프트 설정 완료")
             
             # ReAct 에이전트 생성
@@ -147,38 +121,39 @@ async def get_routine_agent_async():
             _agent_instance = create_react_agent(
                 llm, 
                 tools, 
-                prompt=system_prompt
+                prompt=system_prompt,
+                # checkpointer=MemorySaver()
             )
             logger.info("ReAct 에이전트 생성 완료")
             
-            logger.info("루틴 관리 에이전트 초기화 완료")
+            logger.info("음식 매니저 에이전트 초기화 완료")
         except Exception as e:
-            logger.error(f"루틴 관리 에이전트 초기화 중 오류 발생: {str(e)}")
+            logger.error(f"음식 매니저 에이전트 초기화 중 오류 발생: {str(e)}")
             raise
         
     return _agent_instance
 
 
-def get_routine_agent():
-    """루틴 관리 에이전트의 싱글톤 인스턴스를 반환합니다."""
+def get_food_manager_agent():
+    """음식 매니저 에이전트의 싱글톤 인스턴스를 반환합니다."""
     global _agent_instance
     if _agent_instance is None:
         try:
             # 비동기 초기화 함수를 동기적으로 실행
-            logger.info("루틴 에이전트 비동기 초기화 시작")
+            logger.info("음식 매니저 에이전트 비동기 초기화 시작")
             loop = asyncio.get_event_loop()
-            _agent_instance = loop.run_until_complete(get_routine_agent_async())
-            logger.info("루틴 에이전트 비동기 초기화 완료")
+            _agent_instance = loop.run_until_complete(get_food_manager_agent_async())
+            logger.info("음식 매니저 에이전트 비동기 초기화 완료")
         except Exception as e:
-            logger.error(f"루틴 에이전트 초기화 실패: {str(e)}")
+            logger.error(f"음식 매니저 에이전트 초기화 실패: {str(e)}")
             raise
     
     return _agent_instance
 
 
-def routine_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+def food_manager_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
-    루틴 관리 에이전트 노드 함수입니다.
+    음식 매니저 에이전트 노드 함수입니다.
     
     Args:
         state: 현재 메시지와 상태 정보
@@ -188,40 +163,40 @@ def routine_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
     try:
         # 에이전트 인스턴스 가져오기
-        logger.info("루틴 관리 에이전트 노드 함수 실행 시작")
-        routine_agent = get_routine_agent()
+        logger.info("음식 매니저 에이전트 노드 함수 실행 시작")
+        food_manager_agent = get_food_manager_agent()
         
         # 입력 메시지 로깅
         if "messages" in state and state["messages"]:
             last_user_msg = state["messages"][-1].content
-            logger.info(f"루틴 에이전트에 전달된 메시지: '{last_user_msg[:100]}...'")
+            logger.info(f"음식 매니저 에이전트에 전달된 메시지: '{last_user_msg[:100]}...'")
         
         # 에이전트 호출
-        logger.info("루틴 관리 에이전트 추론 시작")
-        result = routine_agent.invoke(state)
-        logger.info("루틴 관리 에이전트 추론 완료")
+        logger.info("음식 매니저 에이전트 추론 시작")
+        result = food_manager_agent.invoke(state)
+        logger.info("음식 매니저 에이전트 추론 완료")
         
         # 결과 메시지 생성
         if "messages" in result and result["messages"]:
             last_message = result["messages"][-1]
-            routine_message = HumanMessage(content=last_message.content, name="routine_agent")
-            logger.info(f"루틴 에이전트 응답: '{last_message.content[:1000]}...'")
+            food_manager_message = HumanMessage(content=last_message.content, name="food_manager_agent")
+            logger.info(f"음식 매니저 에이전트 응답: '{last_message.content[:1000]}...'")
         else:
-            logger.warning("루틴 에이전트가 응답을 생성하지 않음")
-            routine_message = HumanMessage(content="응답을 생성할 수 없습니다.", name="routine_agent")
+            logger.warning("음식 매니저 에이전트가 응답을 생성하지 않음")
+            food_manager_message = HumanMessage(content="응답을 생성할 수 없습니다.", name="food_manager_agent")
         
-        logger.info("루틴 관리 에이전트 작업 완료, 슈퍼바이저로 반환")
+        logger.info("음식 매니저 에이전트 작업 완료, 슈퍼바이저로 반환")
         
         # 슈퍼바이저로 돌아가기
         return Command(
-            update={"messages": [routine_message]},
+            update={"messages": [food_manager_message]},
             goto="supervisor"
         )
     except Exception as e:
-        logger.error(f"루틴 관리 노드 함수 실행 중 오류 발생: {str(e)}")
+        logger.error(f"음식 매니저 노드 함수 실행 중 오류 발생: {str(e)}")
         error_message = HumanMessage(
-            content=f"루틴 관리 에이전트 실행 중 오류가 발생했습니다: {str(e)}",
-            name="routine_agent"
+            content=f"음식 매니저 에이전트 실행 중 오류가 발생했습니다: {str(e)}",
+            name="food_manager_agent"
         )
         return Command(
             update={"messages": [error_message]},

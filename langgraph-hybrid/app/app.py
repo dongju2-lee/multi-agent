@@ -32,7 +32,7 @@ from graphs.smarthome_graph import get_smarthome_graph, get_mermaid_graph
 from session_manager import FileSystemSessionManager
 
 # MCP 클라이언트 및 도구 가져오기 (사이드바 MCP 정보 표시용)
-from agents.robot_cleaner_agent import init_mcp_client, get_tools_with_details
+from agents.induction_agent import init_mcp_client, get_tools_with_details
 
 # 환경 변수 로드
 load_dotenv(override=True)
@@ -45,28 +45,115 @@ async def refresh_mcp_info():
     try:
         logger.info("MCP 정보 새로고침 시작")
         
-        # MCP 클라이언트 초기화 (강제로 초기화)
-        from agents.robot_cleaner_agent import _mcp_client
+        # 모든 에이전트에서 MCP 클라이언트 및 도구 가져오기
+        from agents.induction_agent import init_mcp_client as init_induction_mcp
+        from agents.food_manager_agent import init_mcp_client as init_food_manager_mcp
+        from agents.microwave_agent import init_mcp_client as init_microwave_mcp
+        from agents.refrigerator_agent import init_mcp_client as init_refrigerator_mcp
+        from agents.routine_agent import init_mcp_client as init_routine_mcp
         
-        # 클라이언트가 이미 초기화되어 있다면 재사용
-        if _mcp_client is not None:
-            client = _mcp_client
-            logger.info("기존 MCP 클라이언트 사용")
-        else:
-            # 새로 초기화
-            client = await init_mcp_client()
-            logger.info("새 MCP 클라이언트 초기화 완료")
+        # 모든 MCP 클라이언트 정보 저장
+        all_mcp_info = {}
         
-        # MCP 도구 가져오기
-        tools = await get_tools_with_details()
-        logger.info(f"MCP 도구 {len(tools)}개 로드 완료")
+        # 인덕션 MCP 클라이언트
+        try:
+            induction_client = await init_induction_mcp()
+            if induction_client:
+                tools = await induction_client.get_tools()
+                all_mcp_info["induction"] = {
+                    "client": induction_client,
+                    "tools": tools
+                }
+            else:
+                all_mcp_info["induction"] = {
+                    "client": None,
+                    "tools": []
+                }
+        except Exception as e:
+            logger.error(f"인덕션 MCP 클라이언트 초기화 실패: {str(e)}")
+            all_mcp_info["induction"] = {"error": str(e)}
+        
+        # 음식 매니저 MCP 클라이언트
+        try:
+            food_manager_client = await init_food_manager_mcp()
+            if food_manager_client:
+                tools = await food_manager_client.get_tools()
+                all_mcp_info["food_manager"] = {
+                    "client": food_manager_client,
+                    "tools": tools
+                }
+            else:
+                all_mcp_info["food_manager"] = {
+                    "client": None,
+                    "tools": []
+                }
+        except Exception as e:
+            logger.error(f"음식 매니저 MCP 클라이언트 초기화 실패: {str(e)}")
+            all_mcp_info["food_manager"] = {"error": str(e)}
+        
+        # 전자레인지 MCP 클라이언트
+        try:
+            microwave_client = await init_microwave_mcp()
+            if microwave_client:
+                tools = await microwave_client.get_tools()
+                all_mcp_info["microwave"] = {
+                    "client": microwave_client,
+                    "tools": tools
+                }
+            else:
+                all_mcp_info["microwave"] = {
+                    "client": None,
+                    "tools": []
+                }
+        except Exception as e:
+            logger.error(f"전자레인지 MCP 클라이언트 초기화 실패: {str(e)}")
+            all_mcp_info["microwave"] = {"error": str(e)}
+        
+        # 냉장고 MCP 클라이언트
+        try:
+            refrigerator_client = await init_refrigerator_mcp()
+            if refrigerator_client:
+                tools = await refrigerator_client.get_tools()
+                all_mcp_info["refrigerator"] = {
+                    "client": refrigerator_client,
+                    "tools": tools
+                }
+            else:
+                all_mcp_info["refrigerator"] = {
+                    "client": None,
+                    "tools": []
+                }
+        except Exception as e:
+            logger.error(f"냉장고 MCP 클라이언트 초기화 실패: {str(e)}")
+            all_mcp_info["refrigerator"] = {"error": str(e)}
+        
+        # 루틴 MCP 클라이언트
+        try:
+            routine_client = await init_routine_mcp()
+            if routine_client:
+                tools = await routine_client.get_tools()
+                all_mcp_info["routine"] = {
+                    "client": routine_client,
+                    "tools": tools
+                }
+            else:
+                all_mcp_info["routine"] = {
+                    "client": None,
+                    "tools": []
+                }
+        except Exception as e:
+            logger.error(f"루틴 MCP 클라이언트 초기화 실패: {str(e)}")
+            all_mcp_info["routine"] = {"error": str(e)}
+        
+        # 모든 도구 수 계산
+        total_tools_count = sum(len(info.get("tools", [])) for info in all_mcp_info.values())
+        logger.info(f"총 {total_tools_count}개의 MCP 도구를 가져왔습니다")
         
         # 결과 반환
         return {
             "status": "initialized",
-            "servers": client.servers if hasattr(client, "servers") else {},
-            "tools_count": len(tools),
-            "tools": tools
+            "all_mcp_info": all_mcp_info,
+            "tools_count": total_tools_count
         }
     except Exception as e:
         logger.error(f"MCP 정보 새로고침 중 오류 발생: {str(e)}")
@@ -560,6 +647,132 @@ async def initialize_session():
         return False
 
 
+def display_mcp_servers_info():
+    """MCP 서버 정보 및 도구 목록을 표시합니다."""
+    try:
+        st.write("## MCP 서버 목록")
+        
+        # 주요 MCP 서버 정보
+        servers = [
+            {"name": "인덕션", "port": 8002, "url": "http://0.0.0.0:8002/sse", "transport": "sse"},
+            {"name": "냉장고", "port": 8003, "url": "http://0.0.0.0:8003/sse", "transport": "sse"},
+            {"name": "음식 매니저", "port": 8004, "url": "http://0.0.0.0:8004/sse", "transport": "sse"},
+            {"name": "전자레인지", "port": 8005, "url": "http://0.0.0.0:8005/sse", "transport": "sse"},
+            {"name": "루틴", "port": 8007, "url": "http://0.0.0.0:8007/sse", "transport": "sse"},
+        ]
+        
+        # 서버 정보 표시
+        for server in servers:
+            st.write(f"### {server['name']} MCP 서버")
+            st.write(f"- **포트**: {server['port']}")
+            st.write(f"- **URL**: {server['url']}")
+            st.write(f"- **전송 방식**: {server['transport']}")
+            
+            # 서버별 주요 도구 목록 (하드코딩)
+            if server["name"] == "인덕션":
+                st.write("#### 주요 도구:")
+                st.write("- **get_induction_state**: 인덕션 전원 상태 조회")
+                st.write("- **set_induction_state**: 인덕션 전원 상태 설정")
+                st.write("- **start_cooking**: 인덕션 조리 시작")
+            
+            elif server["name"] == "냉장고":
+                st.write("#### 주요 도구:")
+                st.write("- **get_cooking_state**: 냉장고 디스플레이 요리 상태 조회")
+                st.write("- **set_cooking_state**: 냉장고 디스플레이 요리 상태 설정")
+            
+            elif server["name"] == "음식 매니저":
+                st.write("#### 주요 도구:")
+                st.write("- **get_ingredients**: 냉장고 내 식재료 목록 조회")
+                st.write("- **get_recipe**: 식재료 기반 레시피 조회")
+            
+            elif server["name"] == "전자레인지":
+                st.write("#### 주요 도구:")
+                st.write("- **get_microwave_state**: 전자레인지 전원 상태 조회")
+                st.write("- **set_microwave_state**: 전자레인지 전원 상태 설정")
+                st.write("- **set_microwave_mode**: 전자레인지 모드 설정")
+                st.write("- **start_cooking**: 전자레인지 조리 시작")
+            
+            elif server["name"] == "루틴":
+                st.write("#### 주요 도구:")
+                st.write("- **get_routines**: 루틴 목록 조회")
+                st.write("- **register_routine**: 루틴 등록")
+                st.write("- **delete_routine**: 루틴 삭제")
+            
+            st.write("---")
+        
+        st.info("이 정보는 정적으로 생성되었습니다. 실제 서버 상태와 다를 수 있습니다.")
+        
+    except Exception as e:
+        st.error(f"MCP 정보 표시 중 오류 발생: {str(e)}")
+
+def display_agent_graph():
+    """에이전트 그래프를 시각화하여 표시합니다."""
+    try:
+        # 그래프 이미지 생성 (더 긴 타임아웃 설정)
+        with st.spinner("그래프 이미지를 생성하는 중입니다. 이 작업은 최대 60초까지 소요될 수 있습니다..."):
+            import threading
+            import time
+            
+            # 그래프 이미지 생성 결과를 저장할 변수
+            result = {"image": None, "error": None}
+            
+            # 그래프 이미지 생성 함수
+            def generate_graph():
+                try:
+                    result["image"] = get_mermaid_graph()
+                except Exception as e:
+                    result["error"] = str(e)
+            
+            # 스레드 생성 및 시작
+            graph_thread = threading.Thread(target=generate_graph)
+            graph_thread.daemon = True
+            graph_thread.start()
+            
+            # 최대 60초 대기 (타임아웃 대폭 증가)
+            wait_time = 60  # 60초
+            start_time = time.time()
+            
+            # 진행 상황 표시를 위한 진행 바
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            while graph_thread.is_alive() and time.time() - start_time < wait_time:
+                # 경과 시간 표시
+                elapsed = time.time() - start_time
+                progress = min(int((elapsed / wait_time) * 100), 99)
+                progress_bar.progress(progress)
+                status_text.text(f"그래프 생성 중... ({int(elapsed)}초 경과)")
+                time.sleep(0.5)
+            
+            if graph_thread.is_alive():
+                # 시간 초과
+                status_text.text("시간 초과, 이미지 생성 중단.")
+                st.warning("그래프 이미지 생성 시간이 초과되었습니다(60초). 인터넷 연결 상태를 확인하거나 나중에 다시 시도해주세요.")
+                
+                # 대체 방안: 네트워크 문제일 수 있으니 다시 시도 버튼 제공
+                if st.button("그래프 생성 다시 시도"):
+                    st.rerun()
+            elif result["error"]:
+                # 에러 발생
+                status_text.text("오류 발생.")
+                st.warning(f"그래프 이미지 생성 실패: {result['error']}")
+                
+                # 다시 시도 버튼 제공
+                if st.button("그래프 생성 다시 시도"):
+                    st.rerun()
+            else:
+                # 이미지 생성 성공
+                progress_bar.progress(100)
+                status_text.text("그래프 생성 완료!")
+                # 이미지 표시
+                st.image(result["image"], use_container_width=True)
+    except Exception as e:
+        st.warning(f"그래프 시각화 실패: {str(e)}")
+        
+        # 다시 시도 버튼 제공
+        if st.button("그래프 생성 다시 시도"):
+            st.rerun()
+
 # --- 사이드바 구성 ---
 with st.sidebar:
     st.header("📊 시스템 정보")
@@ -733,99 +946,10 @@ with st.sidebar:
             st.write("🔹 **에이전트 정보를 불러올 수 없습니다.**")
         
         # MCP 서버 정보 표시
-        with st.expander("🔌 MCP 서버 및 도구 정보"):
-            try:
-                # MCP 정보 가져오기
-                if "mcp_info" not in st.session_state:
-                    with st.spinner("MCP 서버 정보 가져오는 중..."):
-                        try:
-                            # MCP 클라이언트 설정 정보 가져오기
-                            from agents.robot_cleaner_agent import _mcp_client
-                            
-                            # 만약 MCP 클라이언트가 초기화되지 않았으면 초기화
-                            if _mcp_client is None:
-                                st.session_state.mcp_info = {"status": "not_initialized"}
-                            else:
-                                # MCP 클라이언트가 이미 초기화되어 있음
-                                st.session_state.mcp_info = {"status": "initialized"}
-                                
-                                # 서버 설정 가져오기
-                                if hasattr(_mcp_client, "servers"):
-                                    st.session_state.mcp_info["servers"] = _mcp_client.servers
-                                
-                                # 도구 정보 가져오기 (비동기 함수 호출)
-                                try:
-                                    tools_result = st.session_state.event_loop.run_until_complete(get_tools_with_details())
-                                    st.session_state.mcp_info["tools_count"] = len(tools_result)
-                                    st.session_state.mcp_info["tools"] = tools_result
-                                except Exception as e:
-                                    st.session_state.mcp_info["tools_error"] = str(e)
-                        except Exception as e:
-                            st.session_state.mcp_info = {"status": "error", "error": str(e)}
-                
-                # MCP 정보 표시
-                mcp_info = st.session_state.get("mcp_info", {})
-                
-                if mcp_info.get("status") == "not_initialized":
-                    st.warning("MCP 클라이언트가 아직 초기화되지 않았습니다. 로봇청소기 관련 질문을 하면 자동으로 초기화됩니다.")
-                
-                elif mcp_info.get("status") == "error":
-                    st.error(f"MCP 정보 가져오기 실패: {mcp_info.get('error', '알 수 없는 오류')}")
-                
-                elif mcp_info.get("status") == "initialized":
-                    st.success("MCP 클라이언트가 초기화되어 있습니다.")
-                    
-                    # 서버 정보 표시
-                    st.write("##### MCP 서버 정보")
-                    if "servers" in mcp_info:
-                        for server_name, server_info in mcp_info["servers"].items():
-                            st.write(f"- **{server_name}**: {server_info.get('url', '알 수 없음')}")
-                    else:
-                        st.write("서버 정보를 가져올 수 없습니다.")
-                    
-                    # 도구 정보 표시
-                    st.write("##### MCP 도구 정보")
-                    if "tools_error" in mcp_info:
-                        st.error(f"도구 정보 가져오기 실패: {mcp_info['tools_error']}")
-                    elif "tools_count" in mcp_info:
-                        st.write(f"총 **{mcp_info['tools_count']}개**의 MCP 도구가 있습니다.")
-                        
-                        # 도구 목록 표시
-                        if "tools" in mcp_info and mcp_info["tools"]:
-                            tool_list = []
-                            for i, tool in enumerate(mcp_info["tools"], 1):
-                                tool_name = getattr(tool, "name", f"Tool-{i}")
-                                tool_list.append(tool_name)
-                            
-                            # 도구 목록을 깔끔하게 표시
-                            st.write("도구 목록:")
-                            cols = st.columns(2)
-                            mid_point = len(tool_list) // 2 + len(tool_list) % 2
-                            
-                            with cols[0]:
-                                for i, tool in enumerate(tool_list[:mid_point], 1):
-                                    st.write(f"{i}. {tool}")
-                            
-                            with cols[1]:
-                                for i, tool in enumerate(tool_list[mid_point:], mid_point+1):
-                                    st.write(f"{i}. {tool}")
-                    else:
-                        st.write("도구 정보를 가져올 수 없습니다.")
-                
-                # 수동 초기화 버튼
-                if st.button("MCP 정보 새로고침", key="refresh_mcp"):
-                    try:
-                        with st.spinner("MCP 서버 연결 및 도구 정보 새로고침 중..."):
-                            # 비동기 함수 호출
-                            st.session_state.mcp_info = st.session_state.event_loop.run_until_complete(refresh_mcp_info())
-                            st.success("MCP 정보가 새로고침되었습니다.")
-                    except Exception as e:
-                        st.error(f"MCP 정보 새로고침 실패: {str(e)}")
-                        st.session_state.mcp_info = {"status": "error", "error": str(e)}
-                    st.rerun()
-                
-            except Exception as e:
-                st.error(f"MCP 정보 표시 중 오류 발생: {str(e)}")
+        if st.button("🔌 MCP 서버 및 도구 정보 보기", use_container_width=True):
+            # 세션 상태에 플래그 설정
+            st.session_state.show_mcp_info = True
+            st.rerun()
     
     # 구분선
     st.divider()
@@ -833,13 +957,7 @@ with st.sidebar:
     # 그래프 시각화 표시 (접었다 펼 수 있는 기능)
     if st.session_state.session_initialized:
         if st.checkbox("🔄 에이전트 그래프 표시", value=True):
-            try:
-                # 그래프 이미지 생성
-                with st.spinner("그래프 이미지 생성 중..."):
-                    mermaid_graph = get_mermaid_graph()
-                    st.image(mermaid_graph, use_container_width=True)
-            except Exception as e:
-                st.error(f"그래프 이미지 생성 실패: {str(e)}")
+            display_agent_graph()
     else:
         st.info("시스템 초기화 중입니다. 잠시만 기다려주세요...")
     
@@ -905,6 +1023,21 @@ def save_on_exit():
 if st.session_state.session_initialized and st.session_state.history:
     # 세션 데이터가 변경될 때마다 저장 (페이지 리로드 시)
     save_current_session()
+
+# --- MCP 서버 정보 표시 (버튼을 클릭했을 때) ---
+if st.session_state.get("show_mcp_info", False):
+    st.header("🔌 MCP 서버 및 도구 정보")
+    
+    # 정보 표시
+    display_mcp_servers_info()
+    
+    # 돌아가기 버튼
+    if st.button("◀️ 채팅 인터페이스로 돌아가기", use_container_width=True):
+        st.session_state.show_mcp_info = False
+        st.rerun()
+    
+    # 이 아래 내용 표시하지 않기
+    st.stop()
 
 # --- 탭 인터페이스 구현 ---
 # 활성화된 탭이 있는 경우 탭 인터페이스 표시

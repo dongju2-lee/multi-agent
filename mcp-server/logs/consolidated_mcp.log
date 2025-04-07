@@ -1,0 +1,24 @@
+===== 2025년 4월  8일 화요일 01시 40분 39초 KST =====
+통합 MCP 서버 로그 시작
+============================
+
+[01:40:42] [냉장고] INFO:     Started server process [86622]
+[01:40:42] [인덕션] INFO:     Started server process [86621]
+[01:40:42] [냉장고] INFO:     Waiting for application startup.
+[01:40:42] [전자레인지] INFO:     Started server process [86628]
+[01:40:42] [인덕션] INFO:     Waiting for application startup.
+[01:40:42] [냉장고] INFO:     Application startup complete.
+[01:40:42] [음식매니저] INFO:     Started server process [86625]
+[01:40:42] [전자레인지] INFO:     Waiting for application startup.
+[01:40:42] [루틴] INFO:     Started server process [86631]
+[01:40:42] [인덕션] INFO:     Application startup complete.
+[01:40:42] [냉장고] INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
+[01:40:42] [음식매니저] INFO:     Waiting for application startup.
+[01:40:42] [전자레인지] INFO:     Application startup complete.
+[01:40:42] [루틴] INFO:     Waiting for application startup.
+[01:40:42] [인덕션] INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+[01:40:42] [음식매니저] INFO:     Application startup complete.
+[01:40:42] [전자레인지] INFO:     Uvicorn running on http://0.0.0.0:8005 (Press CTRL+C to quit)
+[01:40:42] [루틴] INFO:     Application startup complete.
+[01:40:42] [음식매니저] INFO:     Uvicorn running on http://0.0.0.0:8004 (Press CTRL+C to quit)
+[01:40:42] [루틴] INFO:     Uvicorn running on http://0.0.0.0:8007 (Press CTRL+C to quit)
