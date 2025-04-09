@@ -1,0 +1,31 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "혹시 지금 로봇청소기 모드가 뭐야",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "죄송합니다. 로봇청소기의 현재 모드를 다시 확인하려고 했으나, 또다시 오류가 발생했습니다.\n\n시스템 문제로 인해 현재 로봇청소기의 모드를 확인할 수 없는 것 같습니다. 불편을 드려 죄송합니다. 잠시 후 다시 시도해 보시거나 다른 기능이 필요하시면 말씀해 주세요.\n\n*응답 처리 시간: 40.38초*",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "HumanMessage",
+      "content": "지금 등록된 루틴 뭐있어",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "현재 등록된 루틴이 없습니다. 새로운 루틴을 등록하시겠어요?\n\n*응답 처리 시간: 22.97초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744106506.7594821,
+  "updated_at": 1744106796.0104792
+}

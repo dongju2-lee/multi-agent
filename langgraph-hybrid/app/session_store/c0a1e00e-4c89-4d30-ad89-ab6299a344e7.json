@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "지금 로봇청소기 모두가 뭐야",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "죄송합니다. 오류가 발생했습니다: Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/GRAPH_RECURSION_LIMIT\n\n*응답 처리 시간: 26.48초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744106310.639186,
+  "updated_at": 1744106311.101707
+}

@@ -109,3 +109,26 @@ curl -X POST "http://localhost:8000/routine/register" -H "Content-Type: applicat
 curl -X GET "http://localhost:8000/routine/list"
 
 curl -X POST "http://localhost:8000/routine/delete" -H "Content-Type: application/json" -d "{\"routine_name\": \"night_mode\"}"
+
+## 사용자 API
+
+### 사용자 개인화 정보
+개인화 정보 조회
+curl -X GET "http://localhost:8000/user/personalization"
+
+개인화 정보 추가
+curl -X POST "http://localhost:8000/user/personalization" -H "Content-Type: application/json" -d '{"info":"여름에는 25도 온도 설정을 선호함"}'
+
+### 캘린더 정보
+캘린더 정보 조회
+curl -X GET "http://localhost:8000/user/calendar"
+
+캘린더 이벤트 추가
+curl -X POST "http://localhost:8000/user/calendar" -H "Content-Type: application/json" -d '{"day":"day1", "time":"14:00", "info":"점심 한강 피크닉 약속"}'
+
+### 메시지 정보
+메시지 목록 조회
+curl -X GET "http://localhost:8000/user/message"
+
+메시지 추가
+curl -X POST "http://localhost:8000/user/message" -H "Content-Type: application/json" -d '{"message_name":"카드 결제일 예정", "data":"2025-04-10:15:30:00", "message_body":"20일 한국카드로 124만원이 결제 예정입니다. 충분한 금액을 통장에 넣어놓으세요"}'

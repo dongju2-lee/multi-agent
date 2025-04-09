@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "지금 로봇청소기 모드가 뭐로 셋팅되어있어",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "로봇청소기 에이전트 실행 중 오류가 발생했습니다: unhandled errors in a TaskGroup (1 sub-exception)\n\n*응답 처리 시간: 12.80초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744106381.668878,
+  "updated_at": 1744106382.045246
+}
