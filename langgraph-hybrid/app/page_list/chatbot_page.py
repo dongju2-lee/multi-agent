@@ -364,22 +364,44 @@ def chatbot_page():
     
     # 세션 관리 설정
     with st.sidebar:
-        # 스트리밍 모드 설정
-        st.session_state.streaming_mode = st.toggle("스트리밍 응답 활성화", value=True)
-        
-        # 응답 속도 조절 (단어 표시 간격)
-        if st.session_state.get("streaming_mode", True):
-            if "word_delay" not in st.session_state:
-                st.session_state.word_delay = 0.01
+        # 세션 상태가 있을 때 현재 세션 정보 표시
+        if is_initialized and st.session_state.history:
+            st.markdown("---")
+            st.subheader("💾 현재 세션 정보")
+            st.write(f"세션 ID: {st.session_state.thread_id[:8]}...")
+            st.write(f"메시지 수: {len(st.session_state.history)}")
             
-            st.session_state.word_delay = st.slider(
-                "응답 속도 조절", 
-                min_value=0.0, 
-                max_value=0.05, 
-                value=st.session_state.word_delay,
-                step=0.01,
-                format="%.2f초"
-            )
+            if st.button("세션 저장", use_container_width=True):
+                if save_current_session():
+                    st.success("✅ 세션이 저장되었습니다!")
+                else:
+                    st.error("❌ 세션 저장에 실패했습니다!")
+        
+        # LLM 모델 정보
+        st.markdown("---")
+        st.subheader("🤖 LLM 모델 정보")
+        with st.expander("LLM 모델 세부 정보"):
+            st.markdown("""
+            - **슈퍼바이저 에이전트**: ChatVertexAI (gemini-pro)
+            - **루틴 에이전트**: ChatVertexAI (gemini-pro)
+            - **가전제품 에이전트**: ChatVertexAI (gemini-pro)
+            - **식품 매니저 에이전트**: ChatVertexAI (gemini-pro)
+            - **검색 에이전트**: ChatVertexAI (gemini-pro)
+            """)
+        
+        # 시스템 정보 표시 옵션
+        st.markdown("---")
+        st.subheader("🔍 시스템 정보")
+        
+        # 에이전트 그래프 표시
+        if st.checkbox("에이전트 그래프 표시"):
+            from page_list.helpers import display_agent_graph
+            display_agent_graph()
+        
+        # MCP 서버 정보 표시
+        if st.checkbox("MCP 서버 정보 표시"):
+            from page_list.helpers import display_mcp_servers_info
+            display_mcp_servers_info()
     
     # 대화 기록 출력
     print_message()
@@ -421,18 +443,5 @@ def chatbot_page():
             st.rerun()
         else:
             st.warning("⏳ 시스템을 초기화하는 중 문제가 발생했습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.")
-            
-    # 세션 상태가 있을 때 사이드바에 현재 세션 정보 표시
-    with st.sidebar:
-        if is_initialized and st.session_state.history:
-            st.subheader("💾 현재 세션 정보")
-            st.write(f"세션 ID: {st.session_state.thread_id[:8]}...")
-            st.write(f"메시지 수: {len(st.session_state.history)}")
-            
-            if st.button("세션 저장", use_container_width=True):
-                if save_current_session():
-                    st.success("✅ 세션이 저장되었습니다!")
-                else:
-                    st.error("❌ 세션 저장에 실패했습니다!")
     
     logger.info("채팅봇 페이지가 로드되었습니다.") 

@@ -61,19 +61,24 @@ class MultiApp:
             # 설정 섹션
             st.subheader("설정")
             
-            # # 스트리밍 모드 설정
-            # streaming_mode = st.checkbox("응답 스트리밍 모드", 
-            #                            value=st.session_state.get("streaming_mode", True))
-            # if "streaming_mode" not in st.session_state or st.session_state.streaming_mode != streaming_mode:
-            #     st.session_state.streaming_mode = streaming_mode
-            
-            # # 스트리밍 지연 시간 설정
-            # if streaming_mode:
-            #     word_delay = st.slider("단어 지연 시간 (초)", 
-            #                           min_value=0.0, max_value=0.1, value=st.session_state.get("word_delay", 0.01), 
-            #                           step=0.01, format="%.2f")
-            #     if "word_delay" not in st.session_state or st.session_state.word_delay != word_delay:
-            #         st.session_state.word_delay = word_delay
+            # 챗봇 페이지일 때만 스트리밍 모드와 지연 시간 설정 표시
+            if selected_app["title"] == CHATBOT_PAGE:
+                # 스트리밍 모드 설정
+                streaming_mode = st.checkbox("응답 스트리밍 모드", 
+                                           value=st.session_state.get("streaming_mode", True))
+                if "streaming_mode" not in st.session_state or st.session_state.streaming_mode != streaming_mode:
+                    st.session_state.streaming_mode = streaming_mode
+                
+                # 스트리밍 지연 시간 설정
+                if streaming_mode:
+                    word_delay = st.slider("단어 지연 시간 (초)", 
+                                          min_value=0.0, max_value=0.1, value=st.session_state.get("word_delay", 0.01), 
+                                          step=0.01, format="%.2f")
+                    if "word_delay" not in st.session_state or st.session_state.word_delay != word_delay:
+                        st.session_state.word_delay = word_delay
+            else:
+                # 챗봇 페이지가 아닌 경우 일반 설정 정보 표시
+                st.info("페이지별 설정은 해당 페이지에서 확인하실 수 있습니다.")
         
         # 선택한 앱 실행
         selected_app["function"]()
