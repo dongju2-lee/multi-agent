@@ -114,3 +114,34 @@ curl -X GET "http://localhost:8000/routine/list"
 ```
 curl -X POST "http://localhost:8000/routine/delete" -H "Content-Type: application/json" -d "{\"routine_name\": \"cooking_mode\"}"
 ```
+
+## 사용자
+사용자 개인화 정보 조회
+```
+curl -X GET "http://localhost:8000/user/personalization"
+```
+
+사용자 개인화 정보 추가
+```
+curl -X POST "http://localhost:8000/user/personalization" -H "Content-Type: application/json" -d '{"info":"좋아하는 음식은 김치찌개"}'
+```
+
+사용자 캘린더 정보 조회
+```
+curl -X GET "http://localhost:8000/user/calendar"
+```
+
+사용자 캘린더 이벤트 추가
+```
+curl -X POST "http://localhost:8000/user/calendar" -H "Content-Type: application/json" -d '{"day":"day15","time":"14:00","info":"가족 고기파티 모임"}'
+```
+
+사용자 메시지 정보 조회
+```
+curl -X GET "http://localhost:8000/user/message"
+```
+
+사용자 메시지 추가
+```
+curl -X POST "http://localhost:8000/user/message" -H "Content-Type: application/json" -d '{"message_name":"카드 결제 알림","data":"2025-04-20:15:30:00","message_body":"25일 오후 6시에 한국카드 사용요금인 125만원이 출금될 예정입니다. 통장에 충분한 돈을 넣어놓으시기 바랍니다"}'
+```

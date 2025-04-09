@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from apis import refrigerator, microwave, induction, food_manager, routine
+from apis import refrigerator, microwave, induction, food_manager, routine, user
 from logging_config import setup_logger
 
 # API 라우터용 로거 설정
@@ -19,3 +19,5 @@ router.include_router(food_manager.router)
 logger.info("Food manager router initialized")
 router.include_router(routine.router)
 logger.info("Routine router initialized")
+router.include_router(user.router)
+logger.info("User router initialized")
