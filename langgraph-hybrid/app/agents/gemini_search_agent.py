@@ -28,7 +28,7 @@ async def get_gemini_search_agent_async():
         logger.info("Gemini 검색 에이전트 초기화 시작")
         
         # 모델 설정 가져오기
-        model_name = os.environ.get("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        model_name = os.environ.get("GEMINI_SEARCH_MODEL", "gemini-2.5-pro-exp-03-25")
         logger.info(f"Gemini 검색 에이전트 LLM 모델: {model_name}")
         
         try:

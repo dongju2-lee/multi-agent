@@ -86,7 +86,7 @@ async def get_food_manager_agent_async():
         logger.info("음식 매니저 에이전트 초기화 시작")
         
         # 모델 설정 가져오기
-        model_name = os.environ.get("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        model_name = os.environ.get("FOOD_MANAGER_MODEL", "gemini-2.5-pro-exp-03-25")
         logger.info(f"음식 매니저 에이전트 LLM 모델: {model_name}")
         
         try:

@@ -44,9 +44,6 @@ def home_page():
         - 멀티에이전트 시스템이 복잡한 요청 처리
         - 대화 기록 저장 및 불러오기
         """)
-        st.button("👉 챗봇으로 이동", use_container_width=True, 
-                 help="자연어로 가전제품을 제어하는 챗봇 페이지로 이동합니다.",
-                 on_click=lambda: st.switch_page(CHATBOT_PAGE) if hasattr(st, 'switch_page') else None)
     
     with col2:
         st.subheader("🧠 스마트 가전 관리")
@@ -55,9 +52,6 @@ def home_page():
         - 원격 제어 및 설정 변경
         - 실시간 상태 업데이트
         """)
-        st.button("👉 가전제품으로 이동", use_container_width=True,
-                 help="가전제품 상태를 확인하고 제어하는 페이지로 이동합니다.",
-                 on_click=lambda: st.switch_page(APPLIANCE_PAGE) if hasattr(st, 'switch_page') else None)
     
     with col3:
         st.subheader("📱 모바일 연동")
@@ -66,9 +60,6 @@ def home_page():
         - 알림 및 메시지 관리
         - 일정 및 개인화 설정
         """)
-        st.button("👉 모바일로 이동", use_container_width=True,
-                 help="모바일 연동 정보를 확인하는 페이지로 이동합니다.",
-                 on_click=lambda: st.switch_page(MOBILE_PAGE) if hasattr(st, 'switch_page') else None)
     
     # 시스템 정보 표시
     st.markdown("---")

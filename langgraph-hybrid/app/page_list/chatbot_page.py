@@ -670,12 +670,23 @@ def chatbot_page():
         st.markdown("---")
         st.subheader("🤖 LLM 모델 정보")
         with st.expander("LLM 모델 세부 정보"):
-            st.markdown("""
-            - **슈퍼바이저 에이전트**: ChatVertexAI (gemini-pro)
-            - **루틴 에이전트**: ChatVertexAI (gemini-pro)
-            - **가전제품 에이전트**: ChatVertexAI (gemini-pro)
-            - **식품 매니저 에이전트**: ChatVertexAI (gemini-pro)
-            - **검색 에이전트**: ChatVertexAI (gemini-pro)
+            # 환경 변수에서 모델 이름 가져오기
+            supervisor_model = os.environ.get("SUPERVISOR_MODEL", "gemini-2.5-pro-exp-03-25")
+            routine_model = os.environ.get("ROUTINE_MODEL", "gemini-2.5-pro-exp-03-25")
+            induction_model = os.environ.get("INDUCTION_MODEL", "gemini-2.5-pro-exp-03-25")
+            refrigerator_model = os.environ.get("REFRIGERATOR_MODEL", "gemini-2.5-pro-exp-03-25")
+            microwave_model = os.environ.get("MICROWAVE_MODEL", "gemini-2.5-pro-exp-03-25")
+            food_manager_model = os.environ.get("FOOD_MANAGER_MODEL", "gemini-2.5-pro-exp-03-25")
+            gemini_search_model = os.environ.get("GEMINI_SEARCH_MODEL", "gemini-2.5-pro-exp-03-25")
+            
+            st.markdown(f"""
+            - **슈퍼바이저 에이전트**: {supervisor_model}
+            - **루틴 에이전트**: {routine_model}
+            - **인덕션 에이전트**: {induction_model}
+            - **냉장고 에이전트**: {refrigerator_model}
+            - **전자레인지 에이전트**: {microwave_model}
+            - **식품 매니저 에이전트**: {food_manager_model}
+            - **검색 에이전트**: {gemini_search_model}
             """)
         
         # 시스템 정보 표시 옵션

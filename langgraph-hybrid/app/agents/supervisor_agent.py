@@ -70,7 +70,7 @@ def get_llm():
     """LLM 모델 인스턴스를 생성합니다."""
     try:
         # 모델명 가져오기
-        model_name = os.environ.get("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        model_name = os.environ.get("SUPERVISOR_MODEL", "gemini-2.5-pro-exp-03-25")
         logger.info(f"슈퍼바이저 LLM 모델: {model_name}")
         
         # LLM 생성

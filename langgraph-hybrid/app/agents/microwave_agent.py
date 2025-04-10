@@ -86,7 +86,7 @@ async def get_microwave_agent_async():
         logger.info("전자레인지 제어 에이전트 초기화 시작")
         
         # 모델 설정 가져오기
-        model_name = os.environ.get("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        model_name = os.environ.get("MICROWAVE_MODEL", "gemini-2.5-pro-exp-03-25")
         logger.info(f"전자레인지 제어 에이전트 LLM 모델: {model_name}")
         
         try:
