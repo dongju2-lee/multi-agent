@@ -33,7 +33,7 @@ async def init_mcp_client():
         # MCP 서버 설정
         mcp_config = {
             "routine": {
-                "url": "http://0.0.0.0:8007/sse",
+                "url": os.environ.get("ROUTINE_MCP_URL", "http://0.0.0.0:8007/sse"),
                 "transport": "sse",
             },
         }
@@ -86,7 +86,7 @@ async def get_routine_agent_async():
         logger.info("루틴 관리 에이전트 초기화 시작")
         
         # 모델 설정 가져오기
-        model_name = os.getenv("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        model_name = os.environ.get("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
         logger.info(f"루틴 관리 에이전트 LLM 모델: {model_name}")
         
         try:

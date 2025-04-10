@@ -19,6 +19,20 @@ from session_manager import create_session_manager, get_session_manager
 # 로거 설정
 logger = setup_logger("chatbot_page")
 
+LANGFUSE_SECRET_KEY= os.environ.get("LANGFUSE_SECRET_KEY")
+LANGFUSE_PUBLIC_KEY= os.environ.get("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_HOST= os.environ.get("LANGFUSE_HOST")
+
+from langfuse.callback import CallbackHandler
+langfuse_handler = CallbackHandler(
+    public_key=LANGFUSE_PUBLIC_KEY,
+    secret_key=LANGFUSE_SECRET_KEY,
+    host=LANGFUSE_HOST
+)
+logger.info(f"langfuse셋팅 :: LANGFUSE_SECRET_KEY : {LANGFUSE_SECRET_KEY} :: LANGFUSE_PUBLIC_KEY : {LANGFUSE_PUBLIC_KEY} :: LANGFUSE_HOST : {LANGFUSE_HOST} ")
+from langfuse.callback import CallbackHandler
+langfuse_handler = CallbackHandler()
+
 # --- 세션 관리 함수들 ---
 def dict_to_langchain_message(message_dict):
     """
@@ -197,7 +211,7 @@ async def process_query_streaming(query: str, response_placeholder, timeout_seco
                 
                 # 간단한 접근 방식: 비동기로 먼저 전체 응답을 받음
                 response = await asyncio.wait_for(
-                    st.session_state.graph.ainvoke(inputs),
+                    st.session_state.graph.ainvoke(inputs,config={"callbacks": [langfuse_handler]}),
                     timeout=timeout_seconds
                 )
                 
@@ -311,7 +325,7 @@ async def process_query(query: str) -> Optional[str]:
             logger.info(f"사용자 쿼리 처리 시작: '{query[:50]}'..." if len(query) > 50 else query)
             
             inputs = {"messages": [HumanMessage(content=query)]}
-            response = await st.session_state.graph.ainvoke(inputs)
+            response = await st.session_state.graph.ainvoke(inputs,config={"callbacks": [langfuse_handler]})
             
             # 응답 처리
             if "messages" in response:
@@ -386,7 +400,7 @@ def initialize_chatbot():
         if "session_manager" not in st.session_state:
             logger.info("세션 매니저 초기화")
             from session_manager import get_session_manager
-            manager_type = os.getenv("SESSION_MANAGER_TYPE", "in_memory")
+            manager_type = os.environ.get("SESSION_MANAGER_TYPE", "in_memory")
             st.session_state.session_manager = get_session_manager(manager_type)
         
         # 스레드 ID 생성 (이미 없는 경우에만)

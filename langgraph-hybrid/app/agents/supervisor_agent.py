@@ -67,27 +67,23 @@ class Router(TypedDict):
 
 
 def get_llm():
-    """슈퍼바이저 LLM 모델의 싱글톤 인스턴스를 반환합니다."""
-    global _llm_instance
-    if _llm_instance is None:
-        try:
-            logger.info("슈퍼바이저 LLM 모델 초기화 시작")
-            
-            model_name = os.getenv("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
-            logger.info(f"슈퍼바이저 에이전트 LLM 모델: {model_name}")
-            
-            _llm_instance = ChatVertexAI(
-                model=model_name,
-                temperature=0.1,
-                max_output_tokens=2048
-            )
-            
-            logger.info("슈퍼바이저 LLM 모델 초기화 완료")
-        except Exception as e:
-            logger.error(f"슈퍼바이저 LLM 모델 초기화 중 오류 발생: {str(e)}")
-            raise
-    
-    return _llm_instance
+    """LLM 모델 인스턴스를 생성합니다."""
+    try:
+        # 모델명 가져오기
+        model_name = os.environ.get("MODEL_NAME", "gemini-2.5-pro-exp-03-25")
+        logger.info(f"슈퍼바이저 LLM 모델: {model_name}")
+        
+        # LLM 생성
+        llm = ChatVertexAI(
+            model=model_name,
+            temperature=0.1,
+            max_output_tokens=20000
+        )
+        logger.info("슈퍼바이저 LLM 초기화 완료")
+        return llm
+    except Exception as e:
+        logger.error(f"LLM 초기화 중 오류 발생: {str(e)}")
+        raise
 
 
 class State(MessagesState):

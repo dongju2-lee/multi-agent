@@ -325,7 +325,7 @@ class RedisSessionManager(SessionManager):
             redis_url: Redis 연결 URL. 없으면 환경 변수에서 가져옵니다.
             ttl: 세션 만료 시간(초). 기본값은 24시간.
         """
-        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6379/0")
         self.ttl = ttl
         self.prefix = "smarthome:session:"
         
@@ -476,8 +476,8 @@ def create_session_manager() -> SessionManager:
     USE_FILE_SESSION 환경 변수가 설정되어 있으면 파일 시스템 기반 관리자를,
     그렇지 않으면 메모리 기반 관리자를 반환합니다.
     """
-    redis_url = os.getenv("REDIS_URL")
-    use_file_session = os.getenv("USE_FILE_SESSION", "true").lower() in ("true", "1", "yes")
+    redis_url = os.environ.get("REDIS_URL")
+    use_file_session = os.environ.get("USE_FILE_SESSION", "true").lower() in ("true", "1", "yes")
     
     if redis_url:
         logger.info(f"Redis 기반 세션 관리자 사용: {redis_url}")
@@ -490,7 +490,7 @@ def create_session_manager() -> SessionManager:
             return InMemorySessionManager()
     
     if use_file_session:
-        session_dir = os.getenv("SESSION_STORE_DIR")
+        session_dir = os.environ.get("SESSION_STORE_DIR")
         logger.info(f"파일 시스템 기반 세션 관리자 사용 (디렉토리: {session_dir or '기본 디렉토리'})")
         return FileSystemSessionManager(session_dir)
     

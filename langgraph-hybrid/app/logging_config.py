@@ -5,7 +5,7 @@ from datetime import datetime
 import pathlib
 import sys
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 LOG_LEVEL = getattr(logging, LOG_LEVEL)
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
