@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "혹시 지금 로봇청소기 모드가 뭐ㅑㅇ",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "죄송합니다. 로봇청소기의 현재 모드를 확인하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시겠어요?\n\n*응답 처리 시간: 16.97초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744298163.724177,
+  "updated_at": 1744299842.73326
+}

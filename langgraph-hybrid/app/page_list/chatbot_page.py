@@ -82,6 +82,12 @@ def save_current_session():
         
         # 세션 저장
         st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
+        
+        # 현재 세션이 기본 세션인 경우, default_session_id 업데이트
+        if "default_session_id" in st.session_state and st.session_state.default_session_id == st.session_state.thread_id:
+            st.session_state.default_session_id = st.session_state.thread_id
+            logger.info(f"기본 세션 ID 업데이트: {st.session_state.default_session_id}")
+        
         logger.info(f"세션 {st.session_state.thread_id} 저장됨 (메시지 수: {len(st.session_state.history)})")
         return True
     except Exception as e:
@@ -95,13 +101,30 @@ def load_session(session_id: str):
     if "session_manager" not in st.session_state:
         logger.warning("세션 매니저가 초기화되지 않았습니다")
         return False
+    
+    # 현재 세션과 동일한 세션을 불러올 경우 아무것도 하지 않음
+    if "thread_id" in st.session_state and st.session_state.thread_id == session_id:
+        logger.info(f"이미 현재 세션({session_id})입니다.")
+        return True
         
+    # 현재 세션 저장 (다른 세션으로 전환하기 전에)
+    if "thread_id" in st.session_state and "history" in st.session_state and st.session_state.history:
+        try:
+            logger.info(f"세션 전환 전 현재 세션({st.session_state.thread_id}) 저장")
+            save_current_session()
+        except Exception as e:
+            logger.warning(f"세션 전환 전 현재 세션 저장 실패: {str(e)}")
+    
     # 세션 데이터 가져오기
     session_data = st.session_state.session_manager.get_session(session_id)
     if not session_data:
         logger.warning(f"존재하지 않는 세션을 불러오려고 시도함: {session_id}")
         st.error("❌ 세션을 불러올 수 없습니다!")
         return False
+    
+    # 현재 세션을 기본 세션으로 저장 (닫기 버튼 용도)
+    if "default_session_id" not in st.session_state:
+        st.session_state.default_session_id = st.session_state.thread_id
     
     # LangChain 메시지 객체를 딕셔너리 형식으로 변환
     history = []
@@ -407,9 +430,25 @@ def initialize_chatbot():
         if "thread_id" not in st.session_state:
             logger.info("대화 스레드 ID 초기화")
             st.session_state.thread_id = str(uuid.uuid4())
+            # 기본 세션 ID로 저장 (닫기 버튼을 누를 때 돌아올 세션)
+            st.session_state.default_session_id = st.session_state.thread_id
+            
+            # 대화 기록 초기화
+            st.session_state.history = []
+            
+            # 기본 세션을 파일 시스템에 저장 (바로 저장하여 나중에 불러올 수 있도록)
+            logger.info("기본 세션을 파일 시스템에 저장합니다")
+            # 세션 상태 생성
+            session_data = {
+                "messages": [],
+                "next": None,
+            }
+            # 세션 저장
+            st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
+            logger.info(f"기본 세션 {st.session_state.thread_id} 저장 완료")
         
         # 대화 기록 초기화 (이미 없는 경우에만)
-        if "history" not in st.session_state:
+        elif "history" not in st.session_state:
             logger.info("대화 기록 초기화")
             st.session_state.history = []
         
@@ -430,14 +469,58 @@ def chatbot_page():
     st.title("💬 스마트홈 채팅봇")
     st.markdown("---")
     
+    # 챗봇 초기화
+    is_initialized = initialize_chatbot()
+    
+    # 현재 세션 정보 표시 (메인 채팅 화면 상단)
+    if is_initialized:
+        # 현재 세션이 기본 세션인지 여부 확인
+        is_default_session = ("default_session_id" in st.session_state and 
+                             st.session_state.default_session_id == st.session_state.thread_id)
+        
+        # 세션 정보 헤더 컨테이너
+        session_header = st.container()
+        
+        with session_header:
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                # 현재 세션 정보
+                if is_default_session:
+                    st.info(f"📝 기본 세션 | ID: {st.session_state.thread_id[:8]}... | 메시지: {len(st.session_state.history)}개")
+                else:
+                    # 다른 세션을 불러온 경우 (읽기 모드)
+                    st.warning(f"👀 읽기 모드 | ID: {st.session_state.thread_id[:8]}... | 메시지: {len(st.session_state.history)}개")
+            
+            with col2:
+                # 기본 세션이 아닌 경우에만 닫기 버튼 표시
+                if not is_default_session:
+                    if st.button("🔙 기본 세션으로 돌아가기", help="현재 세션을 닫고 기본 세션으로 돌아갑니다", key="main_close_btn"):
+                        if "default_session_id" in st.session_state:
+                            if load_session(st.session_state.default_session_id):
+                                st.success(f"기본 세션으로 돌아왔습니다.")
+                                st.rerun()
+                        else:
+                            # 기본 세션이 없으면 새 세션 생성
+                            st.session_state.thread_id = str(uuid.uuid4())
+                            st.session_state.history = []
+                            st.session_state.default_session_id = st.session_state.thread_id
+                            st.success("✅ 새 세션이 생성되었습니다!")
+                            st.rerun()
+    
+    # 읽기 모드 시 가이드 메시지 추가
+    if not is_default_session:
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 5px solid #ffc107;">
+            <b>📖 읽기 모드:</b> 현재 이전 대화 세션을 보고 있습니다. 새 메시지를 보내려면 기본 세션으로 돌아가세요.
+        </div>
+        """, unsafe_allow_html=True)
+    
     # 채팅봇 소개
     st.markdown("""
     자연어로 스마트홈 시스템과 대화할 수 있는 인터페이스입니다.  
     명령을 내리거나 질문을 하면 멀티에이전트 시스템이 적절한 응답을 제공합니다.
     """)
-    
-    # 챗봇 초기화
-    is_initialized = initialize_chatbot()
     
     # 세션 관리 설정
     with st.sidebar:
@@ -449,6 +532,10 @@ def chatbot_page():
             # 현재 세션 정보 표시
             st.write(f"현재 세션 ID: `{st.session_state.thread_id[:8]}...`")
             st.write(f"메시지 수: {len(st.session_state.history)}")
+            
+            # 기본 세션 여부 표시
+            if "default_session_id" in st.session_state and st.session_state.default_session_id == st.session_state.thread_id:
+                st.info("📌 이 세션은 기본 세션입니다.")
             
             # 세션 저장 버튼
             if st.button("💾 현재 세션 저장", use_container_width=True):
@@ -466,6 +553,17 @@ def chatbot_page():
                 # 새 세션 생성
                 st.session_state.thread_id = str(uuid.uuid4())
                 st.session_state.history = []
+                # 새 세션을 기본 세션으로 설정
+                st.session_state.default_session_id = st.session_state.thread_id
+                
+                # 새 세션 바로 저장
+                session_data = {
+                    "messages": [],
+                    "next": None,
+                }
+                st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
+                logger.info(f"새 세션 {st.session_state.thread_id} 생성 및 저장 완료")
+                
                 st.success("✅ 새 세션이 생성되었습니다!")
                 st.rerun()
             
@@ -480,9 +578,10 @@ def chatbot_page():
                         st.subheader("📋 저장된 세션 목록")
                         
                         # 정렬된 세션 목록 생성 (최신순)
+                        # 세션 관리자 유형에 따라 정렬 키가 다를 수 있으므로 기본값 제공
                         sorted_sessions = sorted(
                             sessions.items(),
-                            key=lambda x: x[1].get('updated_at', 0),
+                            key=lambda x: x[1].get('updated_at', x[1].get('ttl', 0)),
                             reverse=True
                         )
                         
@@ -492,23 +591,71 @@ def chatbot_page():
                         
                         # 세션 목록 표시
                         for session_id, info in visible_sessions:
-                            # 현재 세션은 제외
-                            if session_id == st.session_state.thread_id:
-                                continue
+                            # 현재 세션 여부 확인
+                            is_current_session = session_id == st.session_state.thread_id
                                 
-                            # 세션 정보 구성
-                            timestamp = format_timestamp(info.get('updated_at', 0))
+                            # 세션 정보 구성 - 세션 관리자에 따라 다른 필드가 있을 수 있음
+                            if 'updated_at' in info:
+                                timestamp = format_timestamp(info.get('updated_at', 0))
+                                timestamp_text = f"마지막 업데이트: {timestamp}"
+                            else:
+                                timestamp = ""
+                                timestamp_text = "시간 정보 없음"
+                            
                             msg_count = info.get('message_count', 0)
                             
-                            with st.expander(f"ID: {session_id[:8]}... ({timestamp})"):
-                                st.write(f"메시지 수: {msg_count}개")
-                                st.write(f"마지막 업데이트: {timestamp}")
-                                
-                                # 세션 불러오기 버튼
-                                if st.button("📂 불러오기", key=f"load_{session_id}", help="이 세션 불러오기"):
-                                    if load_session(session_id):
-                                        st.success(f"세션 '{session_id[:8]}...'를 불러왔습니다!")
+                            # 타임스탬프 정보가 있으면 표시하고, 없으면 간단한 형식으로 표시
+                            header_text = f"ID: {session_id[:8]}..."
+                            if timestamp:
+                                header_text += f" ({timestamp})"
+                            
+                            # 현재 세션인 경우 강조 표시
+                            if is_current_session:
+                                header_text = f"🟢 {header_text} (현재 세션)"
+                                with st.expander(header_text, expanded=True):
+                                    st.info("이 세션이 현재 열려 있습니다.")
+                                    st.write(f"메시지 수: {msg_count}개")
+                                    st.write(timestamp_text)
+                                    
+                                    # 새로고침 버튼
+                                    if st.button("🔄 새로고침", key=f"refresh_{session_id}", help="이 세션 새로고침"):
                                         st.rerun()
+                            else:
+                                with st.expander(header_text):
+                                    st.write(f"메시지 수: {msg_count}개")
+                                    st.write(timestamp_text)
+                                    
+                                    # 세션 관리 버튼들
+                                    col1, col2, col3 = st.columns(3)
+                                    
+                                    with col1:
+                                        if st.button("📂 열기", key=f"load_{session_id}", help="이 세션 불러오기"):
+                                            if load_session(session_id):
+                                                st.success(f"세션 '{session_id[:8]}...'를 불러왔습니다!")
+                                                st.rerun()
+                                    
+                                    with col2:
+                                        if st.button("🗑️ 삭제", key=f"delete_{session_id}", help="이 세션 삭제"):
+                                            if delete_session_and_rerun(session_id):
+                                                st.success(f"세션 '{session_id[:8]}...'를 삭제했습니다!")
+                                                st.rerun()
+                                            else:
+                                                st.error(f"세션 삭제에 실패했습니다!")
+                                    
+                                    with col3:
+                                        if st.button("❌ 닫기", key=f"close_{session_id}", help="이 세션 닫기"):
+                                            # 세션을 닫는 기능 - 기본 세션으로 돌아가기
+                                            if "default_session_id" in st.session_state:
+                                                # 기본 세션이 저장되어 있으면 그것을 불러옴
+                                                if load_session(st.session_state.default_session_id):
+                                                    st.success(f"기본 세션으로 돌아왔습니다.")
+                                                    st.rerun()
+                                            else:
+                                                # 기본 세션이 없으면 새 세션 생성
+                                                st.session_state.thread_id = str(uuid.uuid4())
+                                                st.session_state.history = []
+                                                st.success("✅ 새 세션이 생성되었습니다!")
+                                                st.rerun()
                         
                         # 더 많은 세션이 있는 경우
                         if len(sorted_sessions) > max_sessions:
@@ -546,41 +693,82 @@ def chatbot_page():
     # 대화 기록 출력
     print_message()
     
+    # 읽기 모드일 때 입력창 위에 안내 메시지 표시
+    if is_initialized and "default_session_id" in st.session_state and st.session_state.default_session_id != st.session_state.thread_id:
+        # 읽기 모드 안내 메시지 (더 눈에 띄게)
+        st.markdown("""
+        <div style="background-color: #fef3c7; color: #92400e; padding: 10px; border-radius: 5px; text-align: center; margin-bottom: 10px; border: 1px solid #f59e0b;">
+            <h3 style="margin: 0; color: #92400e;">📘 읽기 모드 - 채팅 비활성화</h3>
+            <p style="margin: 5px 0 0 0;">현재 이전 대화를 읽는 중입니다. 대화를 계속하려면 기본 세션으로 돌아가세요.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 기본 세션으로 돌아가는 버튼
+        if st.button("🔙 기본 세션으로 돌아가기", 
+                   key="bottom_close_btn", 
+                   help="이전에 사용하던 기본 세션으로 돌아갑니다",
+                   use_container_width=True):
+            if load_session(st.session_state.default_session_id):
+                st.success(f"기본 세션으로 돌아왔습니다.")
+                st.rerun()
+            else:
+                # 기본 세션을 불러오지 못한 경우 새 세션 생성
+                st.warning("기본 세션을 찾을 수 없어 새 세션을 생성합니다.")
+                st.session_state.thread_id = str(uuid.uuid4())
+                st.session_state.history = []
+                st.session_state.default_session_id = st.session_state.thread_id
+                
+                # 새 세션을 바로 저장
+                session_data = {
+                    "messages": [],
+                    "next": None,
+                }
+                st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
+                
+                st.success("✅ 새 세션이 생성되었습니다!")
+                st.rerun()
+    
     # 사용자 입력 처리
     user_query = st.chat_input("💬 스마트홈 관리 명령이나 질문을 입력하세요")
     if user_query:
         if is_initialized:
-            # 사용자 메시지 표시
-            st.chat_message("user").markdown(user_query)
-            
-            # 응답 생성 중 표시
-            with st.chat_message("assistant"):
-                response_placeholder = st.empty()
+            # 현재 세션이 기본 세션이 아닌 경우 경고 표시
+            if "default_session_id" in st.session_state and st.session_state.default_session_id != st.session_state.thread_id:
+                st.warning("⚠️ 읽기 모드 세션에서는 메시지를 보낼 수 없습니다. 기본 세션으로 돌아가거나 이 세션을 기본 세션으로 설정하세요.")
+                time.sleep(2)  # 사용자가 경고를 읽을 시간을 줌
+                st.rerun()  # 페이지 리로드하여 메시지 전송 방지
+            else:
+                # 사용자 메시지 표시
+                st.chat_message("user").markdown(user_query)
                 
-                # 사용자 선택에 따라 스트리밍 또는 일반 방식으로 처리
-                if st.session_state.get("streaming_mode", True):
-                    # 스트리밍 방식
-                    with st.spinner("🤖 스마트홈 시스템이 응답을 생성하고 있습니다..."):
-                        response = st.session_state.event_loop.run_until_complete(
-                            process_query_streaming(user_query, response_placeholder)
-                        )
-                else:
-                    # 일반 방식
-                    with st.spinner("🤖 스마트홈 시스템이 응답을 생성하고 있습니다..."):
-                        response = st.session_state.event_loop.run_until_complete(
-                            process_query(user_query)
-                        )
-                        response_placeholder.markdown(response)
-            
-            # 대화 기록 저장
-            st.session_state.history.append({"role": "user", "content": user_query})
-            st.session_state.history.append({"role": "assistant", "content": response})
-            
-            # 세션 자동 저장
-            save_current_session()
-            
-            # 페이지 리로드
-            st.rerun()
+                # 응답 생성 중 표시
+                with st.chat_message("assistant"):
+                    response_placeholder = st.empty()
+                    
+                    # 사용자 선택에 따라 스트리밍 또는 일반 방식으로 처리
+                    if st.session_state.get("streaming_mode", True):
+                        # 스트리밍 방식
+                        with st.spinner("🤖 스마트홈 시스템이 응답을 생성하고 있습니다..."):
+                            response = st.session_state.event_loop.run_until_complete(
+                                process_query_streaming(user_query, response_placeholder)
+                            )
+                    else:
+                        # 일반 방식
+                        with st.spinner("🤖 스마트홈 시스템이 응답을 생성하고 있습니다..."):
+                            response = st.session_state.event_loop.run_until_complete(
+                                process_query(user_query)
+                            )
+                            response_placeholder.markdown(response)
+                
+                # 대화 기록 저장
+                st.session_state.history.append({"role": "user", "content": user_query})
+                st.session_state.history.append({"role": "assistant", "content": response})
+                
+                # 세션 자동 저장
+                save_current_session()
+                
+                # 페이지 리로드
+                st.rerun()
         else:
             st.warning("⏳ 시스템을 초기화하는 중 문제가 발생했습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.")
     
@@ -1002,4 +1190,25 @@ def display_mcp_servers_info():
             st.warning("⚠️ MCP 서버 정보가 아직 로드되지 않았습니다. '새로고침' 버튼을 클릭하세요.")
     except Exception as e:
         st.error(f"MCP 정보 표시 중 오류 발생: {str(e)}")
-        logger.error(f"MCP 정보 표시 중 오류: {str(e)}", exc_info=True) 
+        logger.error(f"MCP 정보 표시 중 오류: {str(e)}", exc_info=True)
+
+def delete_session_and_rerun(session_id: str) -> bool:
+    """세션을 삭제하고 페이지를 새로고침합니다."""
+    if "session_manager" not in st.session_state:
+        logger.warning("세션 매니저가 초기화되지 않았습니다")
+        return False
+    
+    # 현재 세션을 삭제하려는 경우 먼저 새 세션 생성
+    if session_id == st.session_state.thread_id:
+        st.session_state.thread_id = str(uuid.uuid4())
+        st.session_state.history = []
+    
+    # 세션 삭제
+    result = st.session_state.session_manager.delete_session(session_id)
+    
+    if result:
+        logger.info(f"세션 {session_id} 삭제 완료")
+        return True
+    else:
+        logger.warning(f"세션 {session_id} 삭제 실패")
+        return False 

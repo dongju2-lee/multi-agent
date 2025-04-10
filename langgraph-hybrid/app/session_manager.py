@@ -513,10 +513,23 @@ def get_session_manager(manager_type: str = "in_memory") -> SessionManager:
     
     # 세션 매니저 유형에 따라 인스턴스 생성
     if manager_type == "in_memory":
+        logger.info("메모리 기반 세션 매니저를 생성합니다.")
         return InMemorySessionManager()
     elif manager_type == "file_system":
-        return FileSystemSessionManager()
+        logger.info("파일 시스템 기반 세션 매니저를 생성합니다.")
+        session_dir = os.environ.get("SESSION_STORE_DIR")
+        session_manager = FileSystemSessionManager(session_dir)
+        # 세션 목록 테스트
+        try:
+            sessions = session_manager.list_sessions()
+            logger.info(f"파일 시스템 세션 매니저 초기화 완료. 현재 {len(sessions)}개의 세션이 있습니다.")
+            for session_id, info in sessions.items():
+                logger.info(f"세션 ID: {session_id}, 메시지 수: {info.get('message_count', 0)}")
+        except Exception as e:
+            logger.error(f"세션 목록 조회 테스트 중 오류 발생: {str(e)}")
+        return session_manager
     elif manager_type == "redis":
+        logger.info("Redis 기반 세션 매니저를 생성합니다.")
         return RedisSessionManager()
     else:
         # 기본값은 in-memory
