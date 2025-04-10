@@ -7,8 +7,8 @@ from logging_config import setup_logger
 logger = setup_logger("induction_api")
 
 router = APIRouter(
-    prefix="/Induction",
-    tags=["Induction"],
+    prefix="/induction",
+    tags=["induction"],
     responses={404: {"description": "Not found"}},
 )
 

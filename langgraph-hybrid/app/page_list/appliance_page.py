@@ -25,7 +25,7 @@ def get_refrigerator_display():
 def get_induction_state():
     """인덕션 상태 가져오기"""
     try:
-        response = requests.get(f"{MOCK_SERVER_URL}/Induction/power/state", timeout=2)
+        response = requests.get(f"{MOCK_SERVER_URL}/induction/power/state", timeout=2)
         if response.status_code == 200:
             data = response.json()
             power_state = data.get("power_state", "알 수 없음")
@@ -87,7 +87,7 @@ def appliance_page():
     
     # 수동 새로고침 버튼
     if st.button("🔄 수동 새로고침"):
-        st.experimental_rerun()
+        st.rerun()
     
     # 냉장고, 인덕션, 전자레인지 상태를 3개 열로 표시
     col1, col2, col3 = st.columns(3)

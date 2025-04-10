@@ -111,7 +111,7 @@ def log_messages(messages: List[BaseMessage]) -> None:
             
         if hasattr(last_msg, "content"):
             content = last_msg.content
-            logger.info(f"마지막 메시지(타입: {msg_type}): '{content[:100]}...'")
+            logger.info(f"마지막 메시지(타입: {msg_type}): '{content[:1000]}...'")
 
 
 def supervisor_node(state: State) -> Command[Literal[*members, "__end__"]]:

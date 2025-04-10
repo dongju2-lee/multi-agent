@@ -20,6 +20,7 @@ curl -X GET "http://localhost:8000/microwave/power/state"
 전자레인지 켜기
 ```
 curl -X POST "http://localhost:8000/microwave/power/state" -H "Content-Type: application/json" -d '{"power_state":"on"}'
+
 ```
 
 전자레인지 모드 확인
@@ -70,22 +71,22 @@ curl -X POST "http://localhost:8000/microwave/power/state" -H "Content-Type: app
 ## 인덕션
 인덕션 상태 확인
 ```
-curl -X GET "http://localhost:8000/Induction/power/state"
+curl -X GET "http://localhost:8000/induction/power/state"
 ```
 
 인덕션 켜기
 ```
-curl -X POST "http://localhost:8000/Induction/power/state" -H "Content-Type: application/json" -d '{"power_state":"on"}'
+curl -X POST "http://localhost:8000/induction/power/state" -H "Content-Type: application/json" -d '{"power_state":"on"}'
 ```
 
 인덕션 조리 시작 (타이머 설정)
 ```
-curl -X POST "http://localhost:8000/Induction/start-cooking" -H "Content-Type: application/json" -d '{"timer":30}'
+curl -X POST "http://localhost:8000/induction/start-cooking" -H "Content-Type: application/json" -d '{"timer":30}'
 ```
 
 인덕션 끄기
 ```
-curl -X POST "http://localhost:8000/Induction/power/state" -H "Content-Type: application/json" -d '{"power_state":"off"}'
+curl -X POST "http://localhost:8000/induction/power/state" -H "Content-Type: application/json" -d '{"power_state":"off"}'
 ```
 
 ## 푸드 매니저

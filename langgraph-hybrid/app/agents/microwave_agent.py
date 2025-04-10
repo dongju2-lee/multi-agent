@@ -102,7 +102,9 @@ async def get_microwave_agent_async():
             # MCP 클라이언트 및 도구 가져오기
             logger.info("MCP 도구 로딩 중...")
             tools = await get_tools_with_details()
-            logger.info("MCP 도구 로딩 완료")
+            logger.info("@@@ MCP 도구 로딩 완료 @@@")
+            logger.info(tools)
+            logger.info("@@@@@@@@@@@@@@@@@@@@@@")
             
             # 시스템 프롬프트 설정
             logger.info("시스템 프롬프트 구성 중...")
@@ -169,7 +171,7 @@ def microwave_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         # 입력 메시지 로깅
         if "messages" in state and state["messages"]:
             last_user_msg = state["messages"][-1].content
-            logger.info(f"전자레인지 에이전트에 전달된 메시지: '{last_user_msg[:100]}...'")
+            logger.info(f"전자레인지 에이전트에 전달된 메시지: '{last_user_msg[:1000]}...'")
         
         # 에이전트 호출
         logger.info("전자레인지 제어 에이전트 추론 시작")

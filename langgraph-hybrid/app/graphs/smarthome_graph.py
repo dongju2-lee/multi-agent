@@ -56,6 +56,7 @@ def get_mermaid_graph():
     try:
         logger.info("Mermaid 다이어그램 이미지 생성 시작")
         graph = get_smarthome_graph()
+        logger.info(graph.get_graph().draw_mermaid())
         # 타임아웃 없이 기본 호출
         return graph.get_graph().draw_mermaid_png()
     except Exception as e:

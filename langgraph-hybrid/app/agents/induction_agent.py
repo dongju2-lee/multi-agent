@@ -168,7 +168,7 @@ def induction_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         # 입력 메시지 로깅
         if "messages" in state and state["messages"]:
             last_user_msg = state["messages"][-1].content
-            logger.info(f"인덕션 에이전트에 전달된 메시지: '{last_user_msg[:100]}...'")
+            logger.info(f"인덕션 에이전트에 전달된 메시지: '{last_user_msg[:1000]}...'")
         
         # 에이전트 호출
         logger.info("인덕션 제어 에이전트 추론 시작")

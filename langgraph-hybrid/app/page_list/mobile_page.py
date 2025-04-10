@@ -92,7 +92,7 @@ def mobile_page():
     
     # 새로고침 버튼
     if st.button("🔄 새로고침"):
-        st.experimental_rerun()
+        st.rerun()
     
     st.markdown("---")
     
@@ -159,7 +159,7 @@ def mobile_page():
                         
                         if response.status_code == 200:
                             st.success("✅ 개인화 정보가 저장되었습니다.")
-                            st.experimental_rerun()
+                            st.rerun()
                         else:
                             st.error(f"❌ 저장 실패: {response.status_code}")
                     except requests.exceptions.RequestException as e:
@@ -223,7 +223,7 @@ def mobile_page():
                         
                         if response.status_code == 200:
                             st.success("✅ 일정이 추가되었습니다.")
-                            st.experimental_rerun()
+                            st.rerun()
                         else:
                             st.error(f"❌ 저장 실패: {response.status_code}")
                     except requests.exceptions.RequestException as e:

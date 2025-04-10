@@ -58,7 +58,7 @@ async def get_induction_state() -> Dict:
     """
     logger.info("인덕션 전원 상태 조회 요청 수신")
     # 모의 서버에 API 요청
-    result = await mock_api_request("/Induction/power/state")
+    result = await mock_api_request("/induction/power/state")
     return result
 
 # 인덕션 전원 상태 설정 도구
@@ -75,7 +75,7 @@ async def set_induction_state(power_state: str) -> Dict:
     """
     logger.info(f"인덕션 전원 상태 설정 요청 수신: {power_state}")
     # 모의 서버에 API 요청
-    result = await mock_api_request("/Induction/power/state", "POST", {"power_state": power_state})
+    result = await mock_api_request("/induction/power/state", "POST", {"power_state": power_state})
     return result
 
 # 인덕션 조리 시작 도구
@@ -92,7 +92,7 @@ async def start_cooking(timer: int) -> Dict:
     """
     logger.info(f"인덕션 조리 시작 요청 수신: 타이머 {timer}초")
     # 모의 서버에 API 요청
-    result = await mock_api_request("/Induction/start-cooking", "POST", {"timer": timer})
+    result = await mock_api_request("/induction/start-cooking", "POST", {"timer": timer})
     return result
 
 if __name__ == "__main__":

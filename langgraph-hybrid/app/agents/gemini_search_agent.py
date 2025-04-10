@@ -115,7 +115,7 @@ async def gemini_search_node(state: MessagesState) -> Command[Literal["superviso
         # 입력 메시지 로깅
         if "messages" in state and state["messages"]:
             last_user_msg = state["messages"][-1].content
-            logger.info(f"Gemini 검색 에이전트에 전달된 메시지: '{last_user_msg[:100]}...'")
+            logger.info(f"Gemini 검색 에이전트에 전달된 메시지: '{last_user_msg[:1000]}...'")
         
         # 시스템 프롬프트 구성
         system_prompt = """당신은 검색 에이전트입니다. 사용자가 제공하는 질문이나 키워드에 대해 정확하고 유용한 정보를 제공해야 합니다.

@@ -495,4 +495,30 @@ def create_session_manager() -> SessionManager:
         return FileSystemSessionManager(session_dir)
     
     logger.info("메모리 기반 세션 관리자 사용")
-    return InMemorySessionManager() 
+    return InMemorySessionManager()
+
+def get_session_manager(manager_type: str = "in_memory") -> SessionManager:
+    """
+    지정된 유형의 세션 매니저 객체를 반환합니다.
+    
+    Args:
+        manager_type: 세션 매니저 유형 ('in_memory', 'file_system', 'redis')
+    
+    Returns:
+        적절한 유형의 SessionManager 객체
+    """
+    manager_type = manager_type.lower()
+    
+    logger.info(f"세션 매니저 가져오기: 유형={manager_type}")
+    
+    # 세션 매니저 유형에 따라 인스턴스 생성
+    if manager_type == "in_memory":
+        return InMemorySessionManager()
+    elif manager_type == "file_system":
+        return FileSystemSessionManager()
+    elif manager_type == "redis":
+        return RedisSessionManager()
+    else:
+        # 기본값은 in-memory
+        logger.warning(f"알 수 없는 세션 매니저 유형: {manager_type}, in-memory 사용")
+        return InMemorySessionManager() 
