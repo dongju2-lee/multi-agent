@@ -176,7 +176,7 @@ def get_routine_agent():
     return _agent_instance
 
 
-def routine_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+async def routine_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
     루틴 관리 에이전트 노드 함수입니다.
     
@@ -198,7 +198,7 @@ def routine_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         
         # 에이전트 호출
         logger.info("루틴 관리 에이전트 추론 시작")
-        result = routine_agent.invoke(state)
+        result = await routine_agent.ainvoke(state)
         logger.info("루틴 관리 에이전트 추론 완료")
         
         # 결과 메시지 생성

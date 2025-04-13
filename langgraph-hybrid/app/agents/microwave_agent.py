@@ -153,7 +153,7 @@ def get_microwave_agent():
     return _agent_instance
 
 
-def microwave_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+async def microwave_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
     전자레인지 제어 에이전트 노드 함수입니다.
     
@@ -175,7 +175,7 @@ def microwave_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         
         # 에이전트 호출
         logger.info("전자레인지 제어 에이전트 추론 시작")
-        result = microwave_agent.invoke(state)
+        result = await microwave_agent.ainvoke(state)
         logger.info("전자레인지 제어 에이전트 추론 완료")
         
         # 결과 메시지 생성

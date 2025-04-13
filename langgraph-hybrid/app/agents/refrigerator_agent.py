@@ -150,7 +150,7 @@ def get_refrigerator_agent():
     return _agent_instance
 
 
-def refrigerator_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+async def refrigerator_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
     냉장고 제어 에이전트 노드 함수입니다.
     
@@ -172,7 +172,7 @@ def refrigerator_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         
         # 에이전트 호출
         logger.info("냉장고 제어 에이전트 추론 시작")
-        result = refrigerator_agent.invoke(state)
+        result = await refrigerator_agent.ainvoke(state)
         logger.info("냉장고 제어 에이전트 추론 완료")
         
         # 결과 메시지 생성

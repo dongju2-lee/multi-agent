@@ -150,7 +150,7 @@ def get_induction_agent():
     return _agent_instance
 
 
-def induction_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+async def induction_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
     인덕션 제어 에이전트 노드 함수입니다.
     
@@ -172,7 +172,7 @@ def induction_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         
         # 에이전트 호출
         logger.info("인덕션 제어 에이전트 추론 시작")
-        result = induction_agent.invoke(state)
+        result = await induction_agent.ainvoke(state)
         logger.info("인덕션 제어 에이전트 추론 완료")
         
         # 결과 메시지 생성

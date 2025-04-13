@@ -151,7 +151,7 @@ def get_food_manager_agent():
     return _agent_instance
 
 
-def food_manager_node(state: MessagesState) -> Command[Literal["supervisor"]]:
+async def food_manager_node(state: MessagesState) -> Command[Literal["supervisor"]]:
     """
     음식 매니저 에이전트 노드 함수입니다.
     
@@ -173,7 +173,7 @@ def food_manager_node(state: MessagesState) -> Command[Literal["supervisor"]]:
         
         # 에이전트 호출
         logger.info("음식 매니저 에이전트 추론 시작")
-        result = food_manager_agent.invoke(state)
+        result = await food_manager_agent.ainvoke(state)
         logger.info("음식 매니저 에이전트 추론 완료")
         
         # 결과 메시지 생성

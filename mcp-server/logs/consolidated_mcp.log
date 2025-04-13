@@ -52,3 +52,13 @@
 [00:23:01] [냉장고] INFO:     127.0.0.1:51827 - "POST /messages/?session_id=09bcfc66eac44c35b988f3b3541ba8f6 HTTP/1.1" 202 Accepted
 [00:23:01] [냉장고] INFO:     127.0.0.1:51827 - "POST /messages/?session_id=09bcfc66eac44c35b988f3b3541ba8f6 HTTP/1.1" 202 Accepted
 [00:23:01] [냉장고] 2025-04-11 00:23:01,379 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[23:53:33] [전자레인지] INFO:     127.0.0.1:49368 - "GET /sse HTTP/1.1" 200 OK
+[23:53:33] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
+[23:53:33] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
+[23:53:33] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
+[23:53:33] [전자레인지] 2025-04-13 23:53:33,774 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[23:53:37] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
+[23:53:37] [전자레인지] 2025-04-13 23:53:37,765 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[23:53:37] [전자레인지] 2025-04-13 23:53:37,771 - microwave_mcp_server - INFO - 전자레인지 전원 상태 설정 요청 수신: on
+[23:53:37] [전자레인지] 2025-04-13 23:53:37,771 - microwave_mcp_server - INFO - 모의 서버 API 요청: POST http://localhost:8000/microwave/power/state
+[23:53:37] [전자레인지] 2025-04-13 23:53:37,819 - microwave_mcp_server - INFO - 모의 서버 응답: {"result": "success", "message": null}
