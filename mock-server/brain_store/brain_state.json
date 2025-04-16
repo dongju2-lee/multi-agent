@@ -1,0 +1,31 @@
+{
+  "daily_activities": [
+    {
+      "time": "2025-04-02",
+      "session_id": "session-yesterday",
+      "summary": "오늘 고기 샌드위치 요리법을 알려달라고 했던 대화"
+    }
+  ],
+  "today_activities": [
+    {
+      "time": "08:30:15",
+      "session_id": "morning-session",
+      "summary": "오늘의 날씨를 물어봤던 대화"
+    }
+  ],
+  "working_with_manager": false,
+  "current_task": null,
+  "paused_tasks": [],
+  "todo_list": [
+    {
+      "request_time": "2025-04-16T20:52:52.110936",
+      "session_id": "todo-session-1",
+      "summary": "오늘 저녁 8시에 운동하기"
+    },
+    {
+      "request_time": "2025-04-16T20:52:52.110936",
+      "session_id": "todo-session-2",
+      "summary": "내일 점심으로 비빔밥 해먹기"
+    }
+  ]
+}

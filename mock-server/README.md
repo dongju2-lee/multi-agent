@@ -193,3 +193,69 @@ curl -X GET "http://localhost:8000/user/message"
 ```
 curl -X POST "http://localhost:8000/user/message" -H "Content-Type: application/json" -d '{"message_name":"카드 결제 알림","data":"2025-04-20:15:30:00","message_body":"25일 오후 6시에 한국카드 사용요금인 125만원이 출금될 예정입니다. 통장에 충분한 돈을 넣어놓으시기 바랍니다"}'
 ```
+
+## 브레인 매니저
+브레인 상태 전체 조회
+```
+curl -X GET "http://localhost:8000/brain-manager/"
+```
+
+특정 경로의 브레인 상태 조회 (작업 매니저 상태)
+```
+curl -X GET "http://localhost:8000/brain-manager/path/working_with_manager"
+```
+
+특정 경로의 브레인 상태 조회 (현재 작업)
+```
+curl -X GET "http://localhost:8000/brain-manager/path/current_task"
+```
+
+특정 경로의 브레인 상태 조회 (할일 목록 전체)
+```
+curl -X GET "http://localhost:8000/brain-manager/path/todo_list"
+```
+
+특정 경로의 브레인 상태 조회 (일시 중지된 작업 목록 전체)
+```
+curl -X GET "http://localhost:8000/brain-manager/path/paused_tasks"
+```
+
+브레인 상태 업데이트 (작업 매니저 상태 변경)
+```
+curl -X PUT "http://localhost:8000/brain-manager/update" -H "Content-Type: application/json" -d '{"path":"working_with_manager", "value":true}'
+```
+
+일일 활동 추가
+```
+curl -X POST "http://localhost:8000/brain-manager/add" -H "Content-Type: application/json" -d '{"collection":"daily_activities", "item":{"time":"2025-04-04", "session_id":"activity-session-id", "summary":"체육관 운동 루틴에 대해 물어봤던 대화"}}'
+```
+
+할일 추가
+```
+curl -X POST "http://localhost:8000/brain-manager/add" -H "Content-Type: application/json" -d '{"collection":"todo_list", "item":{"request_time":"2025-04-04T12:00:00.000Z", "session_id":"todo-session-id", "summary":"내일 아침 6시에 조깅하기"}}'
+```
+
+할일 목록 첫 번째 항목 삭제
+```
+curl -X DELETE "http://localhost:8000/brain-manager/delete" -H "Content-Type: application/json" -d '{"path":"todo_list[0]"}'
+```
+
+현재 작업 설정
+```
+curl -X POST "http://localhost:8000/brain-manager/current-task" -H "Content-Type: application/json" -d '{"agent_name":"쿠킹 에이전트", "task_name":"샌드위치 만들기", "details":"계란 샌드위치 조리 중입니다. 준비 재료: 계란, 빵, 마요네즈, 양상추", "session_id":"cooking-session-id", "start_time":"2025-04-04T14:30:00.000Z"}'
+```
+
+현재 작업 초기화
+```
+curl -X DELETE "http://localhost:8000/brain-manager/current-task"
+```
+
+현재 작업 일시 중지
+```
+curl -X POST "http://localhost:8000/brain-manager/pause-task" -H "Content-Type: application/json" -d '{"summary":"요리 중 전화 와서 중단"}'
+```
+
+일시 중지된 작업 재개 (첫번째 중지된 작업)
+```
+curl -X POST "http://localhost:8000/brain-manager/resume-task/0"
+```

@@ -4,7 +4,7 @@ import uvicorn
 import time
 from logging_config import setup_logger
 from fastapi.middleware.cors import CORSMiddleware
-from apis import food_manager, session
+from apis import food_manager, session, brain_manager
 
 # 애플리케이션 로거 설정
 logger = setup_logger("smart_home_api")
@@ -27,6 +27,7 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(food_manager.router)
 app.include_router(session.router)
+app.include_router(brain_manager.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
