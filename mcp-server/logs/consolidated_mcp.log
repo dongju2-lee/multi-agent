@@ -1,64 +1,124 @@
-===== 2025년 4월 11일 금요일 00시 17분 39초 KST =====
+===== 2025년 4월 16일 수요일 19시 12분 29초 KST =====
 통합 MCP 서버 로그 시작
 ============================
 
-[00:17:43] [인덕션] INFO:     Started server process [19853]
-[00:17:43] [루틴] INFO:     Started server process [19864]
-[00:17:43] [음식매니저] INFO:     Started server process [19857]
-[00:17:43] [냉장고] INFO:     Started server process [19854]
-[00:17:43] [전자레인지] INFO:     Started server process [19861]
-[00:17:43] [인덕션] INFO:     Waiting for application startup.
-[00:17:43] [냉장고] INFO:     Waiting for application startup.
-[00:17:43] [루틴] INFO:     Waiting for application startup.
-[00:17:43] [전자레인지] INFO:     Waiting for application startup.
-[00:17:43] [음식매니저] INFO:     Waiting for application startup.
-[00:17:43] [인덕션] INFO:     Application startup complete.
-[00:17:43] [냉장고] INFO:     Application startup complete.
-[00:17:43] [음식매니저] INFO:     Application startup complete.
-[00:17:43] [전자레인지] INFO:     Application startup complete.
-[00:17:43] [루틴] INFO:     Application startup complete.
-[00:17:43] [냉장고] INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
-[00:17:43] [인덕션] INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
-[00:17:43] [음식매니저] INFO:     Uvicorn running on http://0.0.0.0:8004 (Press CTRL+C to quit)
-[00:17:43] [전자레인지] INFO:     Uvicorn running on http://0.0.0.0:8005 (Press CTRL+C to quit)
-[00:17:43] [루틴] INFO:     Uvicorn running on http://0.0.0.0:8007 (Press CTRL+C to quit)
-[00:18:14] [루틴] 루틴 MCP 서버가 실행 중입니다...
-[00:18:14] [루틴] INFO:     127.0.0.1:51688 - "GET /sse HTTP/1.1" 200 OK
-[00:18:14] [루틴] INFO:     127.0.0.1:51689 - "POST /messages/?session_id=35df4af99c48464eb36113dc5c6b5417 HTTP/1.1" 202 Accepted
-[00:18:14] [루틴] INFO:     127.0.0.1:51689 - "POST /messages/?session_id=35df4af99c48464eb36113dc5c6b5417 HTTP/1.1" 202 Accepted
-[00:18:14] [루틴] INFO:     127.0.0.1:51689 - "POST /messages/?session_id=35df4af99c48464eb36113dc5c6b5417 HTTP/1.1" 202 Accepted
-[00:18:14] [루틴] 2025-04-11 00:18:14,235 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
-[00:23:01] [인덕션] 인덕션 MCP 서버가 실행 중입니다...
-[00:23:01] [인덕션] INFO:     127.0.0.1:51820 - "GET /sse HTTP/1.1" 200 OK
-[00:23:01] [인덕션] INFO:     127.0.0.1:51821 - "POST /messages/?session_id=198d1653daac4644a31287971ac6724e HTTP/1.1" 202 Accepted
-[00:23:01] [인덕션] INFO:     127.0.0.1:51821 - "POST /messages/?session_id=198d1653daac4644a31287971ac6724e HTTP/1.1" 202 Accepted
-[00:23:01] [인덕션] INFO:     127.0.0.1:51821 - "POST /messages/?session_id=198d1653daac4644a31287971ac6724e HTTP/1.1" 202 Accepted
-[00:23:01] [인덕션] 2025-04-11 00:23:01,288 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
-[00:23:01] [음식매니저] 음식 매니저 MCP 서버가 실행 중입니다...
-[00:23:01] [음식매니저] INFO:     127.0.0.1:51822 - "GET /sse HTTP/1.1" 200 OK
-[00:23:01] [음식매니저] INFO:     127.0.0.1:51823 - "POST /messages/?session_id=3f89fa1b1a2547e5ad7f4fe1a835c390 HTTP/1.1" 202 Accepted
-[00:23:01] [음식매니저] INFO:     127.0.0.1:51823 - "POST /messages/?session_id=3f89fa1b1a2547e5ad7f4fe1a835c390 HTTP/1.1" 202 Accepted
-[00:23:01] [음식매니저] INFO:     127.0.0.1:51823 - "POST /messages/?session_id=3f89fa1b1a2547e5ad7f4fe1a835c390 HTTP/1.1" 202 Accepted
-[00:23:01] [음식매니저] 2025-04-11 00:23:01,322 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
-[00:23:01] [전자레인지] 전자레인지 MCP 서버가 실행 중입니다...
-[00:23:01] [전자레인지] INFO:     127.0.0.1:51824 - "GET /sse HTTP/1.1" 200 OK
-[00:23:01] [전자레인지] INFO:     127.0.0.1:51825 - "POST /messages/?session_id=5b1016c403374b6d8f6c970052ccd76e HTTP/1.1" 202 Accepted
-[00:23:01] [전자레인지] INFO:     127.0.0.1:51825 - "POST /messages/?session_id=5b1016c403374b6d8f6c970052ccd76e HTTP/1.1" 202 Accepted
-[00:23:01] [전자레인지] INFO:     127.0.0.1:51825 - "POST /messages/?session_id=5b1016c403374b6d8f6c970052ccd76e HTTP/1.1" 202 Accepted
-[00:23:01] [전자레인지] 2025-04-11 00:23:01,351 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
-[00:23:01] [냉장고] 냉장고 MCP 서버가 실행 중입니다...
-[00:23:01] [냉장고] INFO:     127.0.0.1:51826 - "GET /sse HTTP/1.1" 200 OK
-[00:23:01] [냉장고] INFO:     127.0.0.1:51827 - "POST /messages/?session_id=09bcfc66eac44c35b988f3b3541ba8f6 HTTP/1.1" 202 Accepted
-[00:23:01] [냉장고] INFO:     127.0.0.1:51827 - "POST /messages/?session_id=09bcfc66eac44c35b988f3b3541ba8f6 HTTP/1.1" 202 Accepted
-[00:23:01] [냉장고] INFO:     127.0.0.1:51827 - "POST /messages/?session_id=09bcfc66eac44c35b988f3b3541ba8f6 HTTP/1.1" 202 Accepted
-[00:23:01] [냉장고] 2025-04-11 00:23:01,379 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
-[23:53:33] [전자레인지] INFO:     127.0.0.1:49368 - "GET /sse HTTP/1.1" 200 OK
-[23:53:33] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
-[23:53:33] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
-[23:53:33] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
-[23:53:33] [전자레인지] 2025-04-13 23:53:33,774 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
-[23:53:37] [전자레인지] INFO:     127.0.0.1:49369 - "POST /messages/?session_id=ad003e546485400491e7b6ab156b4317 HTTP/1.1" 202 Accepted
-[23:53:37] [전자레인지] 2025-04-13 23:53:37,765 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
-[23:53:37] [전자레인지] 2025-04-13 23:53:37,771 - microwave_mcp_server - INFO - 전자레인지 전원 상태 설정 요청 수신: on
-[23:53:37] [전자레인지] 2025-04-13 23:53:37,771 - microwave_mcp_server - INFO - 모의 서버 API 요청: POST http://localhost:8000/microwave/power/state
-[23:53:37] [전자레인지] 2025-04-13 23:53:37,819 - microwave_mcp_server - INFO - 모의 서버 응답: {"result": "success", "message": null}
+[19:12:32] [인덕션] INFO:     Started server process [10398]
+[19:12:32] [냉장고] INFO:     Started server process [10399]
+[19:12:32] [냉장고] INFO:     Waiting for application startup.
+[19:12:32] [인덕션] INFO:     Waiting for application startup.
+[19:12:32] [음식매니저] INFO:     Started server process [10401]
+[19:12:32] [전자레인지] INFO:     Started server process [10406]
+[19:12:32] [인덕션] INFO:     Application startup complete.
+[19:12:32] [냉장고] INFO:     Application startup complete.
+[19:12:32] [루틴] INFO:     Started server process [10408]
+[19:12:32] [음식매니저] INFO:     Waiting for application startup.
+[19:12:32] [전자레인지] INFO:     Waiting for application startup.
+[19:12:32] [루틴] INFO:     Waiting for application startup.
+[19:12:32] [인덕션] INFO:     Uvicorn running on http://0.0.0.0:8002 (Press CTRL+C to quit)
+[19:12:32] [냉장고] INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)
+[19:12:32] [음식매니저] INFO:     Application startup complete.
+[19:12:32] [전자레인지] INFO:     Application startup complete.
+[19:12:32] [루틴] INFO:     Application startup complete.
+[19:12:32] [음식매니저] INFO:     Uvicorn running on http://0.0.0.0:8004 (Press CTRL+C to quit)
+[19:12:32] [전자레인지] INFO:     Uvicorn running on http://0.0.0.0:8005 (Press CTRL+C to quit)
+[19:12:32] [루틴] INFO:     Uvicorn running on http://0.0.0.0:8007 (Press CTRL+C to quit)
+[19:13:34] [인덕션] 인덕션 MCP 서버가 실행 중입니다...
+[19:13:34] [인덕션] INFO:     127.0.0.1:49994 - "GET /sse HTTP/1.1" 200 OK
+[19:13:34] [인덕션] INFO:     127.0.0.1:49995 - "POST /messages/?session_id=c70a0fd61b5d4925b2632d31a1910a6f HTTP/1.1" 202 Accepted
+[19:13:34] [인덕션] INFO:     127.0.0.1:49995 - "POST /messages/?session_id=c70a0fd61b5d4925b2632d31a1910a6f HTTP/1.1" 202 Accepted
+[19:13:34] [인덕션] INFO:     127.0.0.1:49995 - "POST /messages/?session_id=c70a0fd61b5d4925b2632d31a1910a6f HTTP/1.1" 202 Accepted
+[19:13:34] [인덕션] 2025-04-16 19:13:34,136 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:13:34] [음식매니저] 음식 매니저 MCP 서버가 실행 중입니다...
+[19:13:34] [음식매니저] INFO:     127.0.0.1:49996 - "GET /sse HTTP/1.1" 200 OK
+[19:13:34] [음식매니저] INFO:     127.0.0.1:49997 - "POST /messages/?session_id=0c5252b71dad477ca2c21de099d6c6d9 HTTP/1.1" 202 Accepted
+[19:13:34] [음식매니저] INFO:     127.0.0.1:49997 - "POST /messages/?session_id=0c5252b71dad477ca2c21de099d6c6d9 HTTP/1.1" 202 Accepted
+[19:13:34] [음식매니저] INFO:     127.0.0.1:49997 - "POST /messages/?session_id=0c5252b71dad477ca2c21de099d6c6d9 HTTP/1.1" 202 Accepted
+[19:13:34] [음식매니저] 2025-04-16 19:13:34,272 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:13:34] [전자레인지] 전자레인지 MCP 서버가 실행 중입니다...
+[19:13:34] [전자레인지] INFO:     127.0.0.1:49998 - "GET /sse HTTP/1.1" 200 OK
+[19:13:34] [전자레인지] INFO:     127.0.0.1:49999 - "POST /messages/?session_id=14740fe1ce6f44aeb329df571aa8f114 HTTP/1.1" 202 Accepted
+[19:13:34] [전자레인지] INFO:     127.0.0.1:49999 - "POST /messages/?session_id=14740fe1ce6f44aeb329df571aa8f114 HTTP/1.1" 202 Accepted
+[19:13:34] [전자레인지] INFO:     127.0.0.1:49999 - "POST /messages/?session_id=14740fe1ce6f44aeb329df571aa8f114 HTTP/1.1" 202 Accepted
+[19:13:34] [전자레인지] 2025-04-16 19:13:34,299 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:13:34] [냉장고] 냉장고 MCP 서버가 실행 중입니다...
+[19:13:34] [냉장고] INFO:     127.0.0.1:50000 - "GET /sse HTTP/1.1" 200 OK
+[19:13:34] [냉장고] INFO:     127.0.0.1:50001 - "POST /messages/?session_id=24c47386500e40ef8e57e30945560fc4 HTTP/1.1" 202 Accepted
+[19:13:34] [냉장고] INFO:     127.0.0.1:50001 - "POST /messages/?session_id=24c47386500e40ef8e57e30945560fc4 HTTP/1.1" 202 Accepted
+[19:13:34] [냉장고] INFO:     127.0.0.1:50001 - "POST /messages/?session_id=24c47386500e40ef8e57e30945560fc4 HTTP/1.1" 202 Accepted
+[19:13:34] [냉장고] 2025-04-16 19:13:34,328 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:13:34] [루틴] 루틴 MCP 서버가 실행 중입니다...
+[19:13:34] [루틴] INFO:     127.0.0.1:50002 - "GET /sse HTTP/1.1" 200 OK
+[19:13:34] [루틴] INFO:     127.0.0.1:50003 - "POST /messages/?session_id=b60abe2d76d54a59a9a1814eb639538f HTTP/1.1" 202 Accepted
+[19:13:34] [루틴] INFO:     127.0.0.1:50003 - "POST /messages/?session_id=b60abe2d76d54a59a9a1814eb639538f HTTP/1.1" 202 Accepted
+[19:13:34] [루틴] INFO:     127.0.0.1:50003 - "POST /messages/?session_id=b60abe2d76d54a59a9a1814eb639538f HTTP/1.1" 202 Accepted
+[19:13:34] [루틴] 2025-04-16 19:13:34,354 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:14:27] [인덕션] INFO:     127.0.0.1:50051 - "POST /messages/?session_id=c70a0fd61b5d4925b2632d31a1910a6f HTTP/1.1" 202 Accepted
+[19:14:27] [인덕션] 2025-04-16 19:14:27,581 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[19:14:27] [인덕션] 2025-04-16 19:14:27,581 - induction_mcp_server - INFO - 인덕션 전원 상태 조회 요청 수신
+[19:14:27] [인덕션] 2025-04-16 19:14:27,581 - induction_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/induction/power/state
+[19:14:27] [인덕션] 2025-04-16 19:14:27,591 - induction_mcp_server - INFO - 모의 서버 응답: {"power_state": "off"}
+[19:33:36] [음식매니저] INFO:     127.0.0.1:50411 - "GET /sse HTTP/1.1" 200 OK
+[19:33:36] [음식매니저] INFO:     127.0.0.1:50412 - "POST /messages/?session_id=c44dccdf0d564f9cbb12080daed44fd6 HTTP/1.1" 202 Accepted
+[19:33:36] [음식매니저] INFO:     127.0.0.1:50412 - "POST /messages/?session_id=c44dccdf0d564f9cbb12080daed44fd6 HTTP/1.1" 202 Accepted
+[19:33:36] [음식매니저] INFO:     127.0.0.1:50412 - "POST /messages/?session_id=c44dccdf0d564f9cbb12080daed44fd6 HTTP/1.1" 202 Accepted
+[19:33:36] [음식매니저] 2025-04-16 19:33:36,442 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:33:40] [음식매니저] INFO:     127.0.0.1:50412 - "POST /messages/?session_id=c44dccdf0d564f9cbb12080daed44fd6 HTTP/1.1" 202 Accepted
+[19:33:40] [음식매니저] 2025-04-16 19:33:40,790 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[19:33:40] [음식매니저] 2025-04-16 19:33:40,790 - food_manager_mcp_server - INFO - 냉장고 내 식재료 목록 조회 요청 수신
+[19:33:40] [음식매니저] 2025-04-16 19:33:40,790 - food_manager_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/food-manager/ingredients
+[19:33:40] [음식매니저] 2025-04-16 19:33:40,799 - food_manager_mcp_server - INFO - 모의 서버 응답: {"ingredients": [{"name": "egg", "amounts": "6 개"}, {"name": "bread", "amounts": "1 loaf"}, {"name": "beef", "amounts": "500g"}, {"name": "onion", "amounts": "2 개"}, {"name": "carrot", "amounts": "3 개"}, {"name": "milk", "amounts": "1 liter"}, {"name": "cheese", "amounts": "200g"}]}
+[19:33:55] [음식매니저] INFO:     127.0.0.1:50435 - "POST /messages/?session_id=c44dccdf0d564f9cbb12080daed44fd6 HTTP/1.1" 202 Accepted
+[19:33:55] [음식매니저] 2025-04-16 19:33:55,133 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[19:33:55] [음식매니저] 2025-04-16 19:33:55,133 - food_manager_mcp_server - INFO - 냉장고 내 식재료 목록 조회 요청 수신
+[19:33:55] [음식매니저] 2025-04-16 19:33:55,133 - food_manager_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/food-manager/ingredients
+[19:33:55] [음식매니저] 2025-04-16 19:33:55,136 - food_manager_mcp_server - INFO - 모의 서버 응답: {"ingredients": [{"name": "egg", "amounts": "6 개"}, {"name": "bread", "amounts": "1 loaf"}, {"name": "beef", "amounts": "500g"}, {"name": "onion", "amounts": "2 개"}, {"name": "carrot", "amounts": "3 개"}, {"name": "milk", "amounts": "1 liter"}, {"name": "cheese", "amounts": "200g"}]}
+[19:40:27] [인덕션] INFO:     127.0.0.1:50566 - "GET /sse HTTP/1.1" 200 OK
+[19:40:27] [인덕션] INFO:     127.0.0.1:50567 - "POST /messages/?session_id=d08759843728484b9c4b7ac0f084eae5 HTTP/1.1" 202 Accepted
+[19:40:27] [인덕션] INFO:     127.0.0.1:50567 - "POST /messages/?session_id=d08759843728484b9c4b7ac0f084eae5 HTTP/1.1" 202 Accepted
+[19:40:27] [인덕션] INFO:     127.0.0.1:50567 - "POST /messages/?session_id=d08759843728484b9c4b7ac0f084eae5 HTTP/1.1" 202 Accepted
+[19:40:27] [인덕션] 2025-04-16 19:40:27,167 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[19:40:31] [인덕션] INFO:     127.0.0.1:50567 - "POST /messages/?session_id=d08759843728484b9c4b7ac0f084eae5 HTTP/1.1" 202 Accepted
+[19:40:31] [인덕션] 2025-04-16 19:40:31,135 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[19:40:31] [인덕션] 2025-04-16 19:40:31,135 - induction_mcp_server - INFO - 인덕션 전원 상태 조회 요청 수신
+[19:40:31] [인덕션] 2025-04-16 19:40:31,136 - induction_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/induction/power/state
+[19:40:31] [인덕션] 2025-04-16 19:40:31,141 - induction_mcp_server - INFO - 모의 서버 응답: {"power_state": "off"}
+[20:00:26] [음식매니저] INFO:     127.0.0.1:51056 - "GET /sse HTTP/1.1" 200 OK
+[20:00:26] [음식매니저] INFO:     127.0.0.1:51057 - "POST /messages/?session_id=d623d24f08834f2b97158bf8fdbaf23b HTTP/1.1" 202 Accepted
+[20:00:26] [음식매니저] INFO:     127.0.0.1:51057 - "POST /messages/?session_id=d623d24f08834f2b97158bf8fdbaf23b HTTP/1.1" 202 Accepted
+[20:00:26] [음식매니저] INFO:     127.0.0.1:51057 - "POST /messages/?session_id=d623d24f08834f2b97158bf8fdbaf23b HTTP/1.1" 202 Accepted
+[20:00:26] [음식매니저] 2025-04-16 20:00:26,093 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[20:00:30] [음식매니저] INFO:     127.0.0.1:51057 - "POST /messages/?session_id=d623d24f08834f2b97158bf8fdbaf23b HTTP/1.1" 202 Accepted
+[20:00:30] [음식매니저] 2025-04-16 20:00:30,798 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[20:00:30] [음식매니저] 2025-04-16 20:00:30,799 - food_manager_mcp_server - INFO - 냉장고 내 식재료 목록 조회 요청 수신
+[20:00:30] [음식매니저] 2025-04-16 20:00:30,799 - food_manager_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/food-manager/ingredients
+[20:00:30] [음식매니저] 2025-04-16 20:00:30,803 - food_manager_mcp_server - INFO - 모의 서버 응답: {"ingredients": [{"name": "egg", "amounts": "6 개"}, {"name": "bread", "amounts": "1 loaf"}, {"name": "beef", "amounts": "500g"}, {"name": "onion", "amounts": "2 개"}, {"name": "carrot", "amounts": "3 개"}, {"name": "milk", "amounts": "1 liter"}, {"name": "cheese", "amounts": "200g"}]}
+[20:00:54] [인덕션] INFO:     127.0.0.1:51083 - "GET /sse HTTP/1.1" 200 OK
+[20:00:54] [인덕션] INFO:     127.0.0.1:51084 - "POST /messages/?session_id=edbb7a92382e4a3da732a3fe83a86223 HTTP/1.1" 202 Accepted
+[20:00:54] [인덕션] INFO:     127.0.0.1:51084 - "POST /messages/?session_id=edbb7a92382e4a3da732a3fe83a86223 HTTP/1.1" 202 Accepted
+[20:00:54] [인덕션] INFO:     127.0.0.1:51084 - "POST /messages/?session_id=edbb7a92382e4a3da732a3fe83a86223 HTTP/1.1" 202 Accepted
+[20:00:54] [인덕션] 2025-04-16 20:00:54,650 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[20:01:00] [인덕션] INFO:     127.0.0.1:51092 - "POST /messages/?session_id=edbb7a92382e4a3da732a3fe83a86223 HTTP/1.1" 202 Accepted
+[20:01:00] [인덕션] 2025-04-16 20:01:00,914 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[20:01:00] [인덕션] 2025-04-16 20:01:00,914 - induction_mcp_server - INFO - 인덕션 전원 상태 조회 요청 수신
+[20:01:00] [인덕션] 2025-04-16 20:01:00,914 - induction_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/induction/power/state
+[20:01:00] [인덕션] 2025-04-16 20:01:00,919 - induction_mcp_server - INFO - 모의 서버 응답: {"power_state": "off"}
+[20:01:54] [전자레인지] INFO:     127.0.0.1:51116 - "GET /sse HTTP/1.1" 200 OK
+[20:01:54] [전자레인지] INFO:     127.0.0.1:51117 - "POST /messages/?session_id=230fd6bc9cef4814abc8a4db15a16699 HTTP/1.1" 202 Accepted
+[20:01:54] [전자레인지] INFO:     127.0.0.1:51117 - "POST /messages/?session_id=230fd6bc9cef4814abc8a4db15a16699 HTTP/1.1" 202 Accepted
+[20:01:54] [전자레인지] INFO:     127.0.0.1:51117 - "POST /messages/?session_id=230fd6bc9cef4814abc8a4db15a16699 HTTP/1.1" 202 Accepted
+[20:01:54] [전자레인지] 2025-04-16 20:01:54,186 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[20:01:59] [전자레인지] INFO:     127.0.0.1:51123 - "POST /messages/?session_id=230fd6bc9cef4814abc8a4db15a16699 HTTP/1.1" 202 Accepted
+[20:01:59] [전자레인지] 2025-04-16 20:01:59,391 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[20:01:59] [전자레인지] 2025-04-16 20:01:59,392 - microwave_mcp_server - INFO - 전자레인지 전원 상태 조회 요청 수신
+[20:01:59] [전자레인지] 2025-04-16 20:01:59,392 - microwave_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/microwave/power/state
+[20:01:59] [전자레인지] 2025-04-16 20:01:59,401 - microwave_mcp_server - INFO - 모의 서버 응답: {"power_state": "off"}
+[20:08:59] [루틴] INFO:     127.0.0.1:51241 - "GET /sse HTTP/1.1" 200 OK
+[20:08:59] [루틴] INFO:     127.0.0.1:51242 - "POST /messages/?session_id=279695efdda24459883236d364610aad HTTP/1.1" 202 Accepted
+[20:08:59] [루틴] INFO:     127.0.0.1:51242 - "POST /messages/?session_id=279695efdda24459883236d364610aad HTTP/1.1" 202 Accepted
+[20:08:59] [루틴] INFO:     127.0.0.1:51242 - "POST /messages/?session_id=279695efdda24459883236d364610aad HTTP/1.1" 202 Accepted
+[20:08:59] [루틴] 2025-04-16 20:08:59,684 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+[20:09:04] [루틴] INFO:     127.0.0.1:51249 - "POST /messages/?session_id=279695efdda24459883236d364610aad HTTP/1.1" 202 Accepted
+[20:09:04] [루틴] 2025-04-16 20:09:04,859 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+[20:09:04] [루틴] 2025-04-16 20:09:04,859 - routine_mcp_server - INFO - 루틴 목록 조회 요청 수신
+[20:09:04] [루틴] 2025-04-16 20:09:04,859 - routine_mcp_server - INFO - 모의 서버 API 요청: GET http://localhost:8000/routine/list
+[20:09:04] [루틴] 2025-04-16 20:09:04,867 - routine_mcp_server - INFO - 모의 서버 응답: {"routines": {}}

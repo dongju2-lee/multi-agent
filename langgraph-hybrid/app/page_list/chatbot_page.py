@@ -429,23 +429,16 @@ def initialize_chatbot():
         # 스레드 ID 생성 (이미 없는 경우에만)
         if "thread_id" not in st.session_state:
             logger.info("대화 스레드 ID 초기화")
-            st.session_state.thread_id = str(uuid.uuid4())
+            
+            # 세션 매니저를 통해 새 세션 생성
+            st.session_state.thread_id = st.session_state.session_manager.create_session()
+            
             # 기본 세션 ID로 저장 (닫기 버튼을 누를 때 돌아올 세션)
             st.session_state.default_session_id = st.session_state.thread_id
             
             # 대화 기록 초기화
             st.session_state.history = []
-            
-            # 기본 세션을 파일 시스템에 저장 (바로 저장하여 나중에 불러올 수 있도록)
-            logger.info("기본 세션을 파일 시스템에 저장합니다")
-            # 세션 상태 생성
-            session_data = {
-                "messages": [],
-                "next": None,
-            }
-            # 세션 저장
-            st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
-            logger.info(f"기본 세션 {st.session_state.thread_id} 저장 완료")
+            logger.info(f"새 세션 생성 완료: {st.session_state.thread_id}")
         
         # 대화 기록 초기화 (이미 없는 경우에만)
         elif "history" not in st.session_state:
@@ -550,21 +543,53 @@ def chatbot_page():
                 if st.session_state.history:
                     save_current_session()
                 
-                # 새 세션 생성
-                st.session_state.thread_id = str(uuid.uuid4())
-                st.session_state.history = []
-                # 새 세션을 기본 세션으로 설정
-                st.session_state.default_session_id = st.session_state.thread_id
+                try:
+                    # 세션 매니저를 통해 새 세션 생성
+                    new_session_id = st.session_state.session_manager.create_session()
+                    
+                    if not new_session_id:
+                        raise ValueError("세션 ID가 생성되지 않았습니다")
+                    
+                    # 세션 ID가 문자열인지 확인
+                    if not isinstance(new_session_id, str):
+                        logger.warning(f"생성된 세션 ID가 문자열이 아닙니다: {type(new_session_id)}")
+                        new_session_id = str(new_session_id)  # 문자열로 변환
+                    
+                    # 새 세션 ID 설정
+                    st.session_state.thread_id = new_session_id
+                    
+                    # 대화 기록 초기화
+                    st.session_state.history = []
+                    
+                    # 새 세션을 기본 세션으로 설정
+                    st.session_state.default_session_id = st.session_state.thread_id
+                    
+                    logger.info(f"새 세션 생성 완료: {st.session_state.thread_id}")
+                    st.success("✅ 새 세션이 생성되었습니다!")
+                    
+                except Exception as e:
+                    # 오류 발생 시 직접 UUID 생성하여 백업 방식으로 처리
+                    import uuid
+                    backup_session_id = str(uuid.uuid4())
+                    
+                    logger.error(f"세션 생성 중 오류 발생: {str(e)}, 백업 ID 사용: {backup_session_id}")
+                    st.error(f"세션 생성 중 오류가 발생했습니다: {str(e)}")
+                    st.info("대체 세션 ID를 생성하여 계속합니다.")
+                    
+                    st.session_state.thread_id = backup_session_id
+                    st.session_state.history = []
+                    st.session_state.default_session_id = backup_session_id
+                    
+                    # 백업 세션 데이터 직접 저장 시도
+                    try:
+                        session_data = {
+                            "messages": [],
+                            "next": None
+                        }
+                        st.session_state.session_manager.update_session(backup_session_id, session_data)
+                    except Exception as save_error:
+                        logger.error(f"백업 세션 저장 중 오류: {str(save_error)}")
                 
-                # 새 세션 바로 저장
-                session_data = {
-                    "messages": [],
-                    "next": None,
-                }
-                st.session_state.session_manager.update_session(st.session_state.thread_id, session_data)
-                logger.info(f"새 세션 {st.session_state.thread_id} 생성 및 저장 완료")
-                
-                st.success("✅ 새 세션이 생성되었습니다!")
                 st.rerun()
             
             # 이전 세션 불러오기

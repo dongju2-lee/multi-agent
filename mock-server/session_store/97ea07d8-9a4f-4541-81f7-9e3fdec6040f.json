@@ -1,0 +1,32 @@
+{
+  "session_id": "97ea07d8-9a4f-4541-81f7-9e3fdec6040f",
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "지금 혹시 냉장고에 재료 뭐 있어",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "네, 냉장고에 있는 재료를 확인했습니다. 현재 냉장고에는 다음과 같은 재료들이 있습니다:\n\n*   계란: 6개\n*   빵: 1개\n*   소고기: 500g\n*   양파: 2개\n*   당근: 3개\n*   우유: 1리터\n*   치즈: 200g\n\n이 재료들로 만들 수 있는 요리가 궁금하시면 알려주세요.\n\n*응답 처리 시간: 26.64초*",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "HumanMessage",
+      "content": "오 그래? 인덕션 켜져있나",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "확인 결과, 인덕션은 현재 꺼져 있습니다.\n\n*응답 처리 시간: 17.67초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744801186.055904,
+  "updated_at": 1744801765.465067
+}

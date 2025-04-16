@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import traceback
 from logging_config import setup_logger
 import pathlib
+import requests
 
 # 로거 설정
 logger = setup_logger("session_manager")
@@ -468,6 +469,157 @@ class RedisSessionManager(SessionManager):
             logger.error(traceback.format_exc())
             return {}
 
+# API 기반 세션 관리자
+class APISessionManager(SessionManager):
+    """API 기반 세션 관리자."""
+    
+    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None):
+        """
+        API 기반 세션 관리자를 초기화합니다.
+        
+        Args:
+            base_url: API 서버 기본 URL. 없으면 환경 변수에서 가져옵니다.
+            api_key: API 인증 키. 없으면 환경 변수에서 가져옵니다.
+        """
+        self.base_url = base_url or os.environ.get("SESSION_API_URL", "http://localhost:8000")
+        self.api_key = api_key or os.environ.get("SESSION_API_KEY", "")
+        self.session_url = f"{self.base_url}/sessions"
+        
+        # HTTP 세션 초기화
+        self.http_session = requests.Session()
+        
+        # API 키가 있으면 헤더에 추가
+        if self.api_key:
+            self.http_session.headers.update({"Authorization": f"Bearer {self.api_key}"})
+        
+        logger.info(f"API 기반 세션 관리자 초기화됨 (API 서버: {self.base_url})")
+    
+    def create_session(self) -> str:
+        """새 세션을 생성하고 세션 ID를 반환합니다."""
+        try:
+            response = self.http_session.post(self.session_url)
+            response.raise_for_status()  # HTTP 오류 체크
+            
+            data = response.json()
+            session_id = data.get("session_id")
+            
+            logger.info(f"API 서버에 새 세션 생성: {session_id}")
+            return session_id
+        except Exception as e:
+            error_msg = f"API 세션 생성 실패: {str(e)}"
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+            raise
+    
+    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """세션 ID로 세션 상태를 조회합니다."""
+        try:
+            response = self.http_session.get(f"{self.session_url}/{session_id}")
+            
+            if response.status_code == 404:
+                logger.warning(f"API 서버에서 존재하지 않는 세션 조회 시도: {session_id}")
+                return None
+            
+            response.raise_for_status()  # 기타 HTTP 오류 체크
+            
+            session_data = response.json()
+            
+            # 메시지 객체로 변환
+            messages = []
+            for msg_data in session_data.get("messages", []):
+                messages.append(deserialize_message({
+                    "type": msg_data.get("type"),
+                    "content": msg_data.get("content", ""),
+                    "name": msg_data.get("name"),
+                    "additional_kwargs": msg_data.get("additional_kwargs", {})
+                }))
+            
+            # 응답 데이터 구성
+            state = {
+                "messages": messages,
+                "next": session_data.get("next"),
+                "created_at": session_data.get("created_at"),
+                "updated_at": session_data.get("updated_at")
+            }
+            
+            logger.info(f"API 서버에서 세션 조회: {session_id} (메시지 수: {len(messages)})")
+            return state
+            
+        except Exception as e:
+            error_msg = f"API 세션 조회 실패: {str(e)}"
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+            return None
+    
+    def update_session(self, session_id: str, state: Dict[str, Any]) -> None:
+        """세션 상태를 업데이트합니다."""
+        try:
+            # 메시지 직렬화
+            messages_data = []
+            for msg in state.get("messages", []):
+                messages_data.append(serialize_message(msg))
+            
+            # 요청 데이터 구성
+            request_data = {
+                "messages": messages_data,
+                "next": state.get("next")
+            }
+            
+            # API 호출
+            response = self.http_session.put(
+                f"{self.session_url}/{session_id}",
+                json=request_data
+            )
+            
+            response.raise_for_status()  # HTTP 오류 체크
+            
+            if "messages" in state:
+                logger.info(f"API 세션 {session_id} 업데이트: 메시지 수 {len(state['messages'])}")
+            else:
+                logger.info(f"API 세션 {session_id} 업데이트")
+                
+        except Exception as e:
+            error_msg = f"API 세션 업데이트 실패: {str(e)}"
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+    
+    def delete_session(self, session_id: str) -> bool:
+        """세션을 삭제합니다."""
+        try:
+            response = self.http_session.delete(f"{self.session_url}/{session_id}")
+            
+            if response.status_code == 404:
+                logger.warning(f"API 서버에서 존재하지 않는 세션 삭제 시도: {session_id}")
+                return False
+            
+            response.raise_for_status()  # HTTP 오류 체크
+            logger.info(f"API 세션 삭제: {session_id}")
+            return True
+            
+        except Exception as e:
+            error_msg = f"API 세션 삭제 실패: {str(e)}"
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+            return False
+    
+    def list_sessions(self) -> Dict[str, Dict[str, Any]]:
+        """모든 세션 목록을 반환합니다."""
+        try:
+            response = self.http_session.get(self.session_url)
+            response.raise_for_status()  # HTTP 오류 체크
+            
+            data = response.json()
+            sessions = data.get("sessions", {})
+            
+            logger.info(f"API 세션 목록 조회: {len(sessions)}개 세션")
+            return sessions
+            
+        except Exception as e:
+            error_msg = f"API 세션 목록 조회 실패: {str(e)}"
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+            return {}
+
 # 세션 관리자 팩토리
 def create_session_manager() -> SessionManager:
     """
@@ -502,7 +654,7 @@ def get_session_manager(manager_type: str = "in_memory") -> SessionManager:
     지정된 유형의 세션 매니저 객체를 반환합니다.
     
     Args:
-        manager_type: 세션 매니저 유형 ('in_memory', 'file_system', 'redis')
+        manager_type: 세션 매니저 유형 ('in_memory', 'file_system', 'redis', 'api')
     
     Returns:
         적절한 유형의 SessionManager 객체
@@ -531,6 +683,9 @@ def get_session_manager(manager_type: str = "in_memory") -> SessionManager:
     elif manager_type == "redis":
         logger.info("Redis 기반 세션 매니저를 생성합니다.")
         return RedisSessionManager()
+    elif manager_type == "api":
+        logger.info("API 기반 세션 매니저를 생성합니다.")
+        return APISessionManager()
     else:
         # 기본값은 in-memory
         logger.warning(f"알 수 없는 세션 매니저 유형: {manager_type}, in-memory 사용")

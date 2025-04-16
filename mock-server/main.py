@@ -3,6 +3,8 @@ from apis.router import router
 import uvicorn
 import time
 from logging_config import setup_logger
+from fastapi.middleware.cors import CORSMiddleware
+from apis import food_manager, session
 
 # 애플리케이션 로거 설정
 logger = setup_logger("smart_home_api")
@@ -13,7 +15,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS 미들웨어 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(router)
+app.include_router(food_manager.router)
+app.include_router(session.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -39,7 +52,11 @@ async def log_requests(request: Request, call_next):
 @app.get("/")
 async def root():
     logger.info("Root endpoint accessed")
-    return {"message": "Welcome to Smart Home API"}
+    return {
+        "status": "running",
+        "message": "스마트홈 모의 서버가 실행 중입니다",
+        "api_docs": "/docs"
+    }
 
 @app.on_event("startup")
 async def startup_event():

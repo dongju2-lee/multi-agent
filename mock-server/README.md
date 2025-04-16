@@ -100,6 +100,53 @@ curl -X GET "http://localhost:8000/food-manager/ingredients"
 curl -X GET "http://localhost:8000/food-manager/recipe" -H "Content-Type: application/json" -d '{"ingredients":["egg","beef"]}'
 ```
 
+## 세션 관리
+새 세션 생성
+```
+curl -X POST "http://localhost:8000/sessions/" -H "Content-Type: application/json" -d '{}'
+```
+
+세션 조회
+```
+curl -X GET "http://localhost:8000/sessions/세션ID"
+```
+
+세션 목록 조회
+```
+curl -X GET "http://localhost:8000/sessions/"
+```
+
+세션 업데이트 (메시지 추가)
+```
+curl -X PUT "http://localhost:8000/sessions/세션ID" -H "Content-Type: application/json" -d '{"messages":[{"type":"HumanMessage","content":"안녕하세요","name":"사용자","additional_kwargs":{}},{"type":"AIMessage","content":"안녕하세요! 무엇을 도와드릴까요?","name":"어시스턴트","additional_kwargs":{}}],"next":null}'
+```
+
+세션 삭제
+```
+curl -X DELETE "http://localhost:8000/sessions/세션ID"
+```
+
+전체 대화 흐름 테스트 (세션 생성부터 삭제까지)
+```
+# 1. 새 세션 생성하고 ID 저장
+SESSION_ID=$(curl -s -X POST "http://localhost:8000/sessions/" | grep -o '"session_id":"[^"]*' | cut -d'"' -f4)
+
+# 2. 세션 ID 출력
+echo "생성된 세션 ID: $SESSION_ID"
+
+# 3. 첫 번째 메시지 추가 (사용자 질문)
+curl -X PUT "http://localhost:8000/sessions/$SESSION_ID" -H "Content-Type: application/json" -d "{\"messages\":[{\"type\":\"HumanMessage\",\"content\":\"냉장고에 있는 식재료를 알려줘\",\"name\":\"사용자\",\"additional_kwargs\":{}}],\"next\":null}"
+
+# 4. 두 번째 메시지 추가 (AI 응답)
+curl -X PUT "http://localhost:8000/sessions/$SESSION_ID" -H "Content-Type: application/json" -d "{\"messages\":[{\"type\":\"HumanMessage\",\"content\":\"냉장고에 있는 식재료를 알려줘\",\"name\":\"사용자\",\"additional_kwargs\":{}},{\"type\":\"AIMessage\",\"content\":\"냉장고에는 다음 식재료가 있습니다: 계란, 빵, 소고기, 양파, 당근, 우유, 치즈\",\"name\":\"식품관리자\",\"additional_kwargs\":{}}],\"next\":null}"
+
+# 5. 세션 내용 확인
+curl -X GET "http://localhost:8000/sessions/$SESSION_ID"
+
+# 6. 세션 삭제
+curl -X DELETE "http://localhost:8000/sessions/$SESSION_ID"
+```
+
 ## 루틴
 루틴 등록
 ```
