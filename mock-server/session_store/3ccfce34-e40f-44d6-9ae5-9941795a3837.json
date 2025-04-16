@@ -1,0 +1,20 @@
+{
+  "session_id": "3ccfce34-e40f-44d6-9ae5-9941795a3837",
+  "messages": [
+    {
+      "type": "HumanMessage",
+      "content": "혹시 한국의 수도는 어디야?",
+      "name": null,
+      "additional_kwargs": {}
+    },
+    {
+      "type": "AIMessage",
+      "content": "한국의 수도는 **서울특별시**입니다.\n\n*응답 처리 시간: 16.24초*",
+      "name": null,
+      "additional_kwargs": {}
+    }
+  ],
+  "next": null,
+  "created_at": 1744812541.7313862,
+  "updated_at": 1744812572.258931
+}
